@@ -1,0 +1,108 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: #0d0a08;
+  font-family: "Inter", -apple-system, sans-serif;
+  color: #e8dfd2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+
+/* Loading screen — shared on public + admin */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0d0a08;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 28px;
+  animation: fadeOut 0.6s 1.4s ease-out forwards;
+  pointer-events: none;
+}
+
+.loading-logo {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 44px;
+  color: #d4a574;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  border-radius: 50%;
+  position: relative;
+  animation: logoBreathe 2s ease-in-out infinite;
+}
+
+.loading-logo::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(212, 165, 116, 0.15);
+  border-radius: 50%;
+  animation: logoBreathe 2s ease-in-out infinite 0.3s;
+}
+
+.loading-name {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 13px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(232, 223, 210, 0.6);
+  opacity: 0;
+  animation: fadeIn 0.8s 0.3s ease-out forwards;
+}
+
+.loading-bar {
+  width: 60px;
+  height: 1px;
+  background: rgba(232, 223, 210, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #d4a574, transparent);
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes logoBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
