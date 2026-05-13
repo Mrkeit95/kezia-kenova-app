@@ -19,7 +19,7 @@ export async function GET(request) {
         thumbUrl = data.thumbnail_url || null;
       }
     } else if (platform === "instagram") {
-      // Instagram: scrape og:image from the public embed page (no auth needed for public posts)
+      // Instagram: scrape the public embed page — no auth needed for public posts
       const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
       const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
       if (m) {
@@ -36,21 +36,35 @@ export async function GET(request) {
         );
         if (embedRes.ok) {
           const html = await embedRes.text();
-          // Try og:image meta tag first
-          const ogMatch =
-            html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-            html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-          if (ogMatch) {
-            thumbUrl = ogMatch[1].replace(/&amp;/g, "&");
-          } else {
-            // Fallback: look for display_url in inline JSON and safely unescape it
+
+          // 1. Try EmbeddedMediaImage src (most reliable — present in embed page HTML)
+          const embeddedImgMatch = html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/) ||
+            html.match(/src="([^"]+)"[^>]*class="EmbeddedMediaImage"/);
+          if (embeddedImgMatch) {
+            thumbUrl = embeddedImgMatch[1].replace(/&amp;/g, "&");
+          }
+
+          // 2. Fallback: lookaside.instagram.com/seo URL embedded in the img tag
+          if (!thumbUrl) {
+            const lookasideMatch = html.match(/src="(https:\/\/lookaside\.instagram\.com\/seo\/[^"]+)"/);
+            if (lookasideMatch) {
+              thumbUrl = lookasideMatch[1].replace(/&amp;/g, "&");
+            }
+          }
+
+          // 3. Fallback: og:image meta tag
+          if (!thumbUrl) {
+            const ogMatch =
+              html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+              html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+            if (ogMatch) thumbUrl = ogMatch[1].replace(/&amp;/g, "&");
+          }
+
+          // 4. Fallback: display_url in inline JSON
+          if (!thumbUrl) {
             const imgMatch = html.match(/"display_url":"([^"]+)"/);
             if (imgMatch) {
-              try {
-                thumbUrl = JSON.parse('"' + imgMatch[1] + '"');
-              } catch {
-                thumbUrl = null;
-              }
+              try { thumbUrl = JSON.parse('"' + imgMatch[1] + '"'); } catch { thumbUrl = null; }
             }
           }
         }
