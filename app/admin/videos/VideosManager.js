@@ -201,7 +201,9 @@ function VideoForm({ video, onSave, onCancel }) {
   // Auto-fetch thumbnail when URL is valid
   useEffect(() => {
     const url = form.url?.trim();
-    if (!url || form.thumbnail_url) return;
+    if (!url) return;
+    // Don't re-fetch if user already has a thumbnail (unless they cleared it)
+    if (form.thumbnail_url) return;
     const valid = isValidUrl(form.platform, url);
     if (!valid) return;
     let cancelled = false;
@@ -215,10 +217,10 @@ function VideoForm({ video, onSave, onCancel }) {
         }
       } catch {}
       if (!cancelled) setFetchingThumb(false);
-    }, 800);
+    }, 900);
     return () => { cancelled = true; clearTimeout(timer); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.url]);
+  }, [form.url, form.thumbnail_url]);
 
   const handleThumbUpload = async (file) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -274,8 +276,8 @@ function VideoForm({ video, onSave, onCancel }) {
           <div className="form-field">
             <label>
               Thumbnail
-              {fetchingThumb && <span style={{ opacity: 0.5, fontStyle: "italic", textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>fetching…</span>}
-              {!fetchingThumb && form.platform === "instagram" && <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>— upload a screenshot from your phone</span>}
+              {fetchingThumb && <span style={{ opacity: 0.5, fontStyle: "italic", textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>auto-fetching…</span>}
+              {!fetchingThumb && form.platform === "instagram" && !form.thumbnail_url && <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>— auto-fetched or upload manually</span>}
             </label>
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
               {form.thumbnail_url && (
@@ -295,7 +297,9 @@ function VideoForm({ video, onSave, onCancel }) {
                 {thumbUploading ? <span>Uploading…</span> : (
                   <span style={{ fontSize: 11 }}>
                     {form.thumbnail_url ? "Replace thumbnail" : "Upload thumbnail"}<br />
-                    <span style={{ fontSize: 10, opacity: 0.5 }}>From phone or computer · screenshot works great</span>
+                    <span style={{ fontSize: 10, opacity: 0.5 }}>
+                      {form.platform === "tiktok" ? "Auto-fetched from TikTok · or upload manually" : "Auto-fetched when possible · or upload a screenshot"}
+                    </span>
                   </span>
                 )}
                 <input ref={thumbInputRef} type="file" accept="image/*" onChange={(e) => handleThumbUpload(e.target.files[0])} style={{ display: "none" }} />

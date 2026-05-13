@@ -1,4 +1,4 @@
-// Server-side oEmbed thumbnail fetcher — avoids CORS issues
+// Server-side thumbnail fetcher — avoids CORS issues
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
@@ -9,39 +9,56 @@ export async function GET(request) {
     let thumbUrl = null;
 
     if (platform === "tiktok") {
-      // TikTok oEmbed
+      // TikTok oEmbed — returns thumbnail_url reliably
       const res = await fetch(
         `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
-        { headers: { "User-Agent": "Mozilla/5.0" }, next: { revalidate: 86400 } }
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; NextBot/1.0)" }, next: { revalidate: 86400 } }
       );
       if (res.ok) {
         const data = await res.json();
         thumbUrl = data.thumbnail_url || null;
       }
     } else if (platform === "instagram") {
-      // Instagram oEmbed (public, no auth needed for public posts)
-      const res = await fetch(
-        `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&fields=thumbnail_url&access_token=public`,
-        { next: { revalidate: 86400 } }
-      );
-      // FB oembed requires token — fallback: use instagram.com/p/{id}/media
-      if (!res.ok) {
-        // Extract ID and use the embed thumbnail trick
-        const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
-        const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
-        if (m) {
-          // Instagram doesn't allow direct thumbnail without auth
-          // Return null — we'll show the embed placeholder
-          thumbUrl = null;
+      // Instagram: scrape og:image from the public embed page (no auth needed for public posts)
+      const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
+      const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
+      if (m) {
+        const shortcode = m[2];
+        const embedRes = await fetch(
+          "https://www.instagram.com/p/" + shortcode + "/embed/",
+          {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+              "Accept": "text/html",
+            },
+            next: { revalidate: 86400 },
+          }
+        );
+        if (embedRes.ok) {
+          const html = await embedRes.text();
+          // Try og:image meta tag first
+          const ogMatch =
+            html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+            html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+          if (ogMatch) {
+            thumbUrl = ogMatch[1].replace(/&amp;/g, "&");
+          } else {
+            // Fallback: look for display_url in inline JSON and safely unescape it
+            const imgMatch = html.match(/"display_url":"([^"]+)"/);
+            if (imgMatch) {
+              try {
+                thumbUrl = JSON.parse('"' + imgMatch[1] + '"');
+              } catch {
+                thumbUrl = null;
+              }
+            }
+          }
         }
-      } else {
-        const data = await res.json();
-        thumbUrl = data.thumbnail_url || null;
       }
     }
 
     return Response.json({ thumbnail_url: thumbUrl });
-  } catch (e) {
+  } catch {
     return Response.json({ thumbnail_url: null });
   }
 }
