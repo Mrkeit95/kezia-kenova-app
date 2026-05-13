@@ -42,20 +42,54 @@ export default function VideosManager({ initialVideos }) {
   const [videos, setVideos] = useState(sorted);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [fetchingAll, setFetchingAll] = useState(false);
   const router = useRouter();
+
+  // Bulk-fetch thumbnails for all videos that are missing one
+  const fetchAllThumbnails = async () => {
+    const missing = videos.filter((v) => !v.thumbnail_url && v.url);
+    if (missing.length === 0) return alert("All videos already have thumbnails!");
+    setFetchingAll(true);
+    const supabase = createClient();
+    let updated = [...videos];
+    for (const v of missing) {
+      try {
+        const res = await fetch(`/api/oembed?url=${encodeURIComponent(v.url)}&platform=${v.platform}`);
+        const data = await res.json();
+        if (data.thumbnail_url) {
+          await supabase.from("videos").update({ thumbnail_url: data.thumbnail_url }).eq("id", v.id);
+          updated = updated.map((u) => u.id === v.id ? { ...u, thumbnail_url: data.thumbnail_url } : u);
+        }
+      } catch {}
+    }
+    setVideos(updated);
+    setFetchingAll(false);
+    router.refresh();
+  };
 
   const tiktoks = videos.filter((v) => v.platform === "tiktok").sort((a, b) => a.sort_order - b.sort_order);
   const instagrams = videos.filter((v) => v.platform === "instagram").sort((a, b) => a.sort_order - b.sort_order);
 
   const handleSave = async (video) => {
     const supabase = createClient();
+
+    // Auto-fetch thumbnail if not already set
+    let thumbnailUrl = video.thumbnail_url || "";
+    if (!thumbnailUrl && video.url) {
+      try {
+        const res = await fetch(`/api/oembed?url=${encodeURIComponent(video.url.trim())}&platform=${video.platform}`);
+        const data = await res.json();
+        if (data.thumbnail_url) thumbnailUrl = data.thumbnail_url;
+      } catch {}
+    }
+
     const payload = {
       platform: video.platform,
       url: video.url.trim(),
       caption: video.caption || "",
       visible: video.visible,
       sort_order: video.sort_order ?? 0,
-      thumbnail_url: video.thumbnail_url || "",
+      thumbnail_url: thumbnailUrl,
     };
     if (video.id) {
       const { error } = await supabase.from("videos").update(payload).eq("id", video.id);
@@ -126,8 +160,8 @@ export default function VideosManager({ initialVideos }) {
 
       <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 16, lineHeight: 1.6 }}>
         {platform === "tiktok"
-          ? "Paste the full TikTok video URL. Thumbnail is fetched automatically."
-          : "Paste the full Instagram Reel URL e.g. https://www.instagram.com/reels/ABC123/ — thumbnail uploads from your phone."}
+          ? "Paste the full TikTok video URL. Thumbnail is fetched automatically when you save."
+          : "Paste the full Instagram Reel URL e.g. https://www.instagram.com/reels/ABC123/ — thumbnail is auto-fetched when you save."}
       </p>
 
       {list.length === 0 ? (
@@ -182,8 +216,20 @@ export default function VideosManager({ initialVideos }) {
     </div>
   );
 
+  const missingThumbs = videos.filter((v) => !v.thumbnail_url).length;
+
   return (
     <>
+      {missingThumbs > 0 && (
+        <div style={{ background: "rgba(212,165,116,0.08)", border: "1px solid rgba(212,165,116,0.2)", borderRadius: 8, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <span style={{ fontSize: 12, color: "rgba(232,223,210,0.7)", letterSpacing: "0.06em" }}>
+            {missingThumbs} video{missingThumbs > 1 ? "s are" : " is"} missing a thumbnail
+          </span>
+          <button onClick={fetchAllThumbnails} className="btn-primary" disabled={fetchingAll} style={{ flexShrink: 0 }}>
+            {fetchingAll ? "Fetching…" : "Auto-Fetch All Thumbnails"}
+          </button>
+        </div>
+      )}
       {renderGroup(tiktoks, "tiktok", "TikTok Videos")}
       {renderGroup(instagrams, "instagram", "Instagram Videos")}
       {editing && <VideoForm video={editing} onSave={handleSave} onCancel={() => setEditing(null)} />}
@@ -277,7 +323,7 @@ function VideoForm({ video, onSave, onCancel }) {
             <label>
               Thumbnail
               {fetchingThumb && <span style={{ opacity: 0.5, fontStyle: "italic", textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>auto-fetching…</span>}
-              {!fetchingThumb && form.platform === "instagram" && !form.thumbnail_url && <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>— auto-fetched or upload manually</span>}
+              {!fetchingThumb && !form.thumbnail_url && <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>— auto-fetched on save</span>}
             </label>
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
               {form.thumbnail_url && (
@@ -298,7 +344,7 @@ function VideoForm({ video, onSave, onCancel }) {
                   <span style={{ fontSize: 11 }}>
                     {form.thumbnail_url ? "Replace thumbnail" : "Upload thumbnail"}<br />
                     <span style={{ fontSize: 10, opacity: 0.5 }}>
-                      {form.platform === "tiktok" ? "Auto-fetched from TikTok · or upload manually" : "Auto-fetched when possible · or upload a screenshot"}
+                      Auto-fetched on save · or upload your own here
                     </span>
                   </span>
                 )}

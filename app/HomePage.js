@@ -368,6 +368,29 @@ export default function HomePage({ products, settings, looks, sections, videos, 
 
           <footer className="footer reveal reveal-up">
             <div className="rule"></div>
+
+            {/* Social icons in footer */}
+            {(s.instagram_url || s.tiktok_url) && (
+              <div className="footer-social">
+                {s.instagram_url && (
+                  <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="footer-social-link" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+                    </svg>
+                    <span>Instagram</span>
+                  </a>
+                )}
+                {s.tiktok_url && (
+                  <a href={s.tiktok_url} target="_blank" rel="noopener noreferrer" className="footer-social-link" aria-label="TikTok">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                    </svg>
+                    <span>TikTok</span>
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="footer-links">
               <button onClick={() => setShowTerms(true)} className="footer-link-btn">Terms</button>
               <span className="footer-dot">·</span>
