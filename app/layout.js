@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "Kezia Ken",
-  description: "Kezia Ken — model · creator · storyteller",
+  title: "Kezia Kenova",
+  description: "Kezia Kenova — model · creator · storyteller",
 };
 
 export default function RootLayout({ children }) {

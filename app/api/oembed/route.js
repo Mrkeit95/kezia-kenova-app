@@ -31,25 +31,25 @@ export async function GET(request) {
               "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
               "Accept": "text/html",
             },
-            next: { revalidate: 86400 },
+            cache: "no-store",
           }
         );
         if (embedRes.ok) {
           const html = await embedRes.text();
 
-          // 1. Try EmbeddedMediaImage src (most reliable — present in embed page HTML)
-          const embeddedImgMatch = html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/) ||
-            html.match(/src="([^"]+)"[^>]*class="EmbeddedMediaImage"/);
-          if (embeddedImgMatch) {
-            thumbUrl = embeddedImgMatch[1].replace(/&amp;/g, "&");
+          // 1. scontent CDN image inside a srcset (the actual video frame/cover) — most reliable
+          // Look for t51.71878 (video frame) or t51.2885-15 (post image) in srcset
+          const srcsetMatch = html.match(/src="(https:\/\/scontent[^"]+t51\.71878[^"]+\.jpg[^"]*)"/)
+            || html.match(/src="(https:\/\/scontent[^"]+t51\.2885-15[^"]+\.jpg[^"]*)"/)
+            || html.match(/src="(https:\/\/scontent[^"]+\.jpg[^"]*)"/); 
+          if (srcsetMatch) {
+            thumbUrl = srcsetMatch[1].replace(/&amp;/g, "&");
           }
 
-          // 2. Fallback: lookaside.instagram.com/seo URL embedded in the img tag
+          // 2. Fallback: lookaside.instagram.com/seo URL (also works as a thumbnail)
           if (!thumbUrl) {
             const lookasideMatch = html.match(/src="(https:\/\/lookaside\.instagram\.com\/seo\/[^"]+)"/);
-            if (lookasideMatch) {
-              thumbUrl = lookasideMatch[1].replace(/&amp;/g, "&");
-            }
+            if (lookasideMatch) thumbUrl = lookasideMatch[1].replace(/&amp;/g, "&");
           }
 
           // 3. Fallback: og:image meta tag

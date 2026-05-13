@@ -16,6 +16,7 @@ const DEFAULTS = {
   tagline: "model · creator · storyteller",
   instagram_url: "https://www.instagram.com/keziaken/",
   tiktok_url: "https://www.tiktok.com/@keziaken",
+  whatsapp_url: "",
   email: "keziakenwork@gmail.com",
   hero_image: "/kezia.jpeg",
   hero_images: [],
@@ -240,6 +241,13 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                 </svg>
               </a>
             )}
+            {s.whatsapp_url && (
+              <a href={s.whatsapp_url} target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="WhatsApp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+              </a>
+            )}
             {s.email && (
               <a href={`mailto:${s.email}`} className="social-icon" aria-label="Email">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -370,7 +378,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
             <div className="rule"></div>
 
             {/* Social icons in footer */}
-            {(s.instagram_url || s.tiktok_url) && (
+            {(s.instagram_url || s.tiktok_url || s.whatsapp_url) && (
               <div className="footer-social">
                 {s.instagram_url && (
                   <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="footer-social-link" aria-label="Instagram">
@@ -386,6 +394,14 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                       <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
                     </svg>
                     <span>TikTok</span>
+                  </a>
+                )}
+                {s.whatsapp_url && (
+                  <a href={s.whatsapp_url} target="_blank" rel="noopener noreferrer" className="footer-social-link" aria-label="WhatsApp">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    <span>WhatsApp</span>
                   </a>
                 )}
               </div>

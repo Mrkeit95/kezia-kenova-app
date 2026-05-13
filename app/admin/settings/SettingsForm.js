@@ -68,6 +68,7 @@ export default function SettingsForm({ initialSettings }) {
     tagline: initialSettings.tagline || "model · creator · storyteller",
     instagram_url: initialSettings.instagram_url || "https://www.instagram.com/keziaken/",
     tiktok_url: initialSettings.tiktok_url || "https://www.tiktok.com/@keziaken",
+    whatsapp_url: initialSettings.whatsapp_url || "",
     email: initialSettings.email || "keziakenwork@gmail.com",
     hero_image: initialSettings.hero_image || "/kezia.jpeg",
     hero_images: initialSettings.hero_images || (initialSettings.hero_image ? [initialSettings.hero_image] : []),
@@ -227,6 +228,11 @@ export default function SettingsForm({ initialSettings }) {
           <div className="form-field">
             <label>TikTok URL</label>
             <input type="url" value={form.tiktok_url} onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })} placeholder="https://www.tiktok.com/@..." />
+          </div>
+          <div className="form-field">
+            <label>WhatsApp URL</label>
+            <input type="url" value={form.whatsapp_url || ""} onChange={(e) => setForm({ ...form, whatsapp_url: e.target.value })} placeholder="https://wa.me/1234567890" />
+            <p style={{ fontSize: 10, color: "rgba(232,223,210,0.4)", marginTop: 4 }}>Format: https://wa.me/ followed by your number with country code (no + or spaces)</p>
           </div>
           <div className="form-field">
             <label>Contact Email</label>
