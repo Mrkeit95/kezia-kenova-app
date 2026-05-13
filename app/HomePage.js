@@ -20,8 +20,6 @@ const DEFAULTS = {
   hero_images: [],
 };
 
-
-
 const TERMS_CONTENT = [
   { h: "Welcome", p: "By using keziakenova.com you agree to these terms. If you don't agree, please don't use the site." },
   { h: "Affiliate links", p: "Many product links here are affiliate. If you click through and buy, I may earn a small commission, at no cost to you. I only recommend products I genuinely use or love." },
@@ -48,31 +46,26 @@ export default function HomePage({ products, settings, looks, sections }) {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
-  // Restore scroll position when returning from a category page
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("home_scroll");
     if (savedScroll) {
       sessionStorage.removeItem("home_scroll");
-      // Wait for content to render then scroll
       setTimeout(() => {
         window.scrollTo({ top: parseInt(savedScroll), behavior: "instant" });
       }, 50);
     }
   }, []);
 
-  // Save scroll before navigating away to category pages
   const saveScrollForCategory = () => {
     sessionStorage.setItem("home_scroll", String(window.scrollY));
   };
 
-  // Lock scroll when any modal is open
   useEffect(() => {
     const anyOpen = modalProduct || showTerms || showPrivacy;
     document.body.style.overflow = anyOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [modalProduct, showTerms, showPrivacy]);
 
-  // Scroll-reveal animations
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -89,21 +82,34 @@ export default function HomePage({ products, settings, looks, sections }) {
     return () => observer.disconnect();
   }, []);
 
-  // Build a product map for quick lookup by id
   const productMap = list.reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
-
-  const instagramHandle = s.instagram_url ? `@${s.instagram_url.split("/").filter(Boolean).pop()}` : "@keziaken";
-  const tiktokHandle = s.tiktok_url ? `@${s.tiktok_url.split("@").pop().replace(/\/$/, "")}` : "@keziaken";
-
-  // Hero images: use array if present, fallback to single image
   const heroImages = (s.hero_images && s.hero_images.length > 0) ? s.hero_images : [s.hero_image];
+
+  const visibleSections = (sections || []).filter((sec) =>
+    (sec.product_ids || []).some((id) => productMap[id])
+  );
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const hasLooks = looks && looks.length > 0;
+  const showTabs = visibleSections.length > 0 || hasLooks;
 
   return (
     <>
       <LoadingScreen />
       <main className="page">
         <div className="grain"></div>
-        <div className="vignette"></div>
+
+        {/* Full-width blurred background — hero image bleeds to edges */}
+        <div className="page-blur-bg" aria-hidden="true">
+          {heroImages[0] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={heroImages[0]} alt="" />
+          )}
+        </div>
 
         <div className="shell">
           <div className="hero">
@@ -119,57 +125,57 @@ export default function HomePage({ products, settings, looks, sections }) {
             <p className="tagline">{s.tagline}</p>
           </header>
 
-          <nav className="links">
+          {/* Social icons — icon only */}
+          <nav className="social-icons">
             {s.instagram_url && (
-              <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="link">
-                <span className="link-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="5" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
-                  </svg>
-                </span>
-                <span className="link-text">
-                  <span className="link-label">Instagram</span>
-                  <span className="link-handle">{instagramHandle}</span>
-                </span>
-                <ArrowIcon />
+              <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+                </svg>
               </a>
             )}
-
             {s.tiktok_url && (
-              <a href={s.tiktok_url} target="_blank" rel="noopener noreferrer" className="link">
-                <span className="link-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-                  </svg>
-                </span>
-                <span className="link-text">
-                  <span className="link-label">TikTok</span>
-                  <span className="link-handle">{tiktokHandle}</span>
-                </span>
-                <ArrowIcon />
+              <a href={s.tiktok_url} target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="TikTok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                </svg>
               </a>
             )}
-
             {s.email && (
-              <a href={`mailto:${s.email}`} className="link">
-                <span className="link-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="5" width="18" height="14" rx="2" />
-                    <path d="M3 7l9 6 9-6" />
-                  </svg>
-                </span>
-                <span className="link-text">
-                  <span className="link-label">Email</span>
-                  <span className="link-handle">Bookings & inquiries</span>
-                </span>
-                <ArrowIcon />
+              <a href={`mailto:${s.email}`} className="social-icon" aria-label="Email">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 7l9 6 9-6" />
+                </svg>
               </a>
             )}
           </nav>
 
-          {looks && looks.length > 0 && (
+          {/* Scrollable section tab bar */}
+          {showTabs && (
+            <div className="section-tabs-wrap">
+              <div className="section-tabs">
+                {hasLooks && (
+                  <button className="section-tab" onClick={() => scrollToSection("looks")}>
+                    Get the Look
+                  </button>
+                )}
+                {visibleSections.map((sec) => (
+                  <button
+                    key={sec.id}
+                    className="section-tab"
+                    onClick={() => scrollToSection(`section-${sec.slug}`)}
+                  >
+                    {sec.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {hasLooks && (
             <section id="looks" className="section reveal reveal-left">
               <div className="section-head">
                 <div className="line"></div>
@@ -201,12 +207,11 @@ export default function HomePage({ products, settings, looks, sections }) {
             </section>
           )}
 
-          {(sections || []).map((sec, idx) => {
+          {visibleSections.map((sec, idx) => {
             const sectionProducts = (sec.product_ids || [])
               .map((id) => productMap[id])
               .filter(Boolean)
               .slice(0, 8);
-            if (sectionProducts.length === 0) return null;
             const revealClass = idx % 2 === 0 ? "reveal-up" : "reveal-right";
             return (
               <section
@@ -253,49 +258,21 @@ export default function HomePage({ products, settings, looks, sections }) {
         <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />
       )}
 
-      <InfoModal
-        open={showTerms}
-        onClose={() => setShowTerms(false)}
-        subtitle="Last updated"
-        title="Terms of Service"
-      >
+      <InfoModal open={showTerms} onClose={() => setShowTerms(false)} subtitle="Last updated" title="Terms of Service">
         <div className="legal-modal-content">
           {TERMS_CONTENT.map((s, i) => (
-            <section key={i}>
-              <h3>{s.h}</h3>
-              <p>{s.p}</p>
-            </section>
+            <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>
           ))}
         </div>
       </InfoModal>
 
-      <InfoModal
-        open={showPrivacy}
-        onClose={() => setShowPrivacy(false)}
-        subtitle="Last updated"
-        title="Privacy Policy"
-      >
+      <InfoModal open={showPrivacy} onClose={() => setShowPrivacy(false)} subtitle="Last updated" title="Privacy Policy">
         <div className="legal-modal-content">
           {PRIVACY_CONTENT.map((s, i) => (
-            <section key={i}>
-              <h3>{s.h}</h3>
-              <p>{s.p}</p>
-            </section>
+            <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>
           ))}
         </div>
       </InfoModal>
     </>
   );
 }
-
-function ArrowIcon() {
-  return (
-    <span className="link-arrow" aria-hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 17L17 7M17 7H8M17 7v9" />
-      </svg>
-    </span>
-  );
-}
-
-
