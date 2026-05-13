@@ -4,11 +4,12 @@ import HomePage from "./HomePage";
 export default async function Page() {
   const supabase = createClient();
 
-  const [productsRes, settingsRes, looksRes, sectionsRes] = await Promise.all([
+  const [productsRes, settingsRes, looksRes, sectionsRes, videosRes] = await Promise.all([
     supabase.from("products").select("*").eq("visible", true).order("sort_order", { ascending: true }),
     supabase.from("settings").select("*").single(),
     supabase.from("looks").select("*").eq("visible", true).order("sort_order", { ascending: true }),
     supabase.from("sections").select("*").eq("visible", true).order("sort_order", { ascending: true }),
+    supabase.from("videos").select("*").eq("visible", true).order("sort_order", { ascending: true }),
   ]);
 
   return (
@@ -17,6 +18,7 @@ export default async function Page() {
       settings={settingsRes.data || {}}
       looks={looksRes.data || []}
       sections={sectionsRes.data || []}
+      videos={videosRes.data || []}
     />
   );
 }

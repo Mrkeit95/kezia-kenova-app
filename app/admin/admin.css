@@ -961,6 +961,57 @@
   .admin-row { grid-template-columns: 1fr; gap: 16px; }
 }
 
+/* Video manager */
+.video-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  background: rgba(232, 223, 210, 0.03);
+  border: 1px solid rgba(232, 223, 210, 0.08);
+  border-radius: 2px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.video-row-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-platform-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.video-platform-badge svg { width: 22px; height: 22px; }
+
+.video-platform-badge.tiktok {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(105, 201, 208, 0.4);
+  color: #69c9d0;
+}
+
+.video-platform-badge.instagram {
+  background: rgba(131, 58, 180, 0.15);
+  border: 1px solid rgba(193, 53, 132, 0.4);
+  color: #c13584;
+}
+
+.video-platform-badge.error {
+  background: rgba(201, 122, 106, 0.1);
+  border: 1px solid rgba(201, 122, 106, 0.3);
+  color: #c97a6a;
+  font-family: monospace;
+}
+
 /* Brand work upload */
 .brand-upload-area {
   border: 1px dashed rgba(232, 223, 210, 0.2);

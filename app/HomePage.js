@@ -7,6 +7,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import ProductCarousel from "@/components/ProductCarousel";
 import ProductModal from "@/components/ProductModal";
 import InfoModal from "@/components/InfoModal";
+import VideoModal from "@/components/VideoModal";
 import "./globals.css";
 import "./home.css";
 
@@ -118,7 +119,7 @@ function GalleryModal({ title, images, open, onClose }) {
   );
 }
 
-export default function HomePage({ products, settings, looks, sections }) {
+export default function HomePage({ products, settings, looks, sections, videos }) {
   const s = { ...DEFAULTS, ...settings };
   const list = products;
 
@@ -128,6 +129,7 @@ export default function HomePage({ products, settings, looks, sections }) {
   const [showAbout, setShowAbout] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
   const [showLocalBrands, setShowLocalBrands] = useState(false);
+  const [activeVideo, setActiveVideo] = useState(null);
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("home_scroll");
@@ -140,10 +142,10 @@ export default function HomePage({ products, settings, looks, sections }) {
   const saveScrollForCategory = () => sessionStorage.setItem("home_scroll", String(window.scrollY));
 
   useEffect(() => {
-    const anyOpen = modalProduct || showTerms || showPrivacy || showAbout || showBrands || showLocalBrands;
+    const anyOpen = modalProduct || showTerms || showPrivacy || showAbout || showBrands || showLocalBrands || activeVideo;
     document.body.style.overflow = anyOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [modalProduct, showTerms, showPrivacy, showAbout, showBrands, showLocalBrands]);
+  }, [modalProduct, showTerms, showPrivacy, showAbout, showBrands, showLocalBrands, activeVideo]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -167,7 +169,11 @@ export default function HomePage({ products, settings, looks, sections }) {
   const hasBrands = s.brand_images && s.brand_images.length > 0;
   const hasLocalBrands = s.local_brand_images && s.local_brand_images.length > 0;
   const hasLooks = looks && looks.length > 0;
-  const showTabs = hasAbout || hasBrands || hasLocalBrands || hasLooks || visibleSections.length > 0;
+  const tiktokVideos = (videos || []).filter((v) => v.platform === "tiktok");
+  const instagramVideos = (videos || []).filter((v) => v.platform === "instagram");
+  const hasTikTok = tiktokVideos.length > 0;
+  const hasInstagram = instagramVideos.length > 0;
+  const showTabs = hasAbout || hasBrands || hasLocalBrands || hasTikTok || hasInstagram || hasLooks || visibleSections.length > 0;
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -236,6 +242,12 @@ export default function HomePage({ products, settings, looks, sections }) {
                 {hasLocalBrands && (
                   <button className="section-tab" onClick={() => setShowLocalBrands(true)}>Local Brands</button>
                 )}
+                {hasTikTok && (
+                  <button className="section-tab" onClick={() => scrollToSection("tiktok")}>TikTok</button>
+                )}
+                {hasInstagram && (
+                  <button className="section-tab" onClick={() => scrollToSection("instagram")}>Instagram</button>
+                )}
                 {hasLooks && (
                   <button className="section-tab" onClick={() => scrollToSection("looks")}>Get the Look</button>
                 )}
@@ -246,6 +258,66 @@ export default function HomePage({ products, settings, looks, sections }) {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* TikTok Videos */}
+          {hasTikTok && (
+            <section id="tiktok" className="section reveal reveal-up">
+              <div className="section-head">
+                <div className="line"></div>
+                <h2 className="section-title">TikTok</h2>
+                <div className="line"></div>
+              </div>
+              <p className="section-sub">watch · shop the yellow card</p>
+              <div className="video-cards-wrap">
+                <div className="video-cards">
+                  {tiktokVideos.map((v) => (
+                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
+                      <div className="video-card-thumb">
+                        <div className="video-card-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+                        <div className="video-card-platform tiktok">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                        </div>
+                      </div>
+                      <div className="video-card-body">
+                        <p className="video-card-caption">{v.caption || "Watch on TikTok"}</p>
+                        <p className="video-card-cta">Tap to watch &amp; shop ›</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Instagram Videos */}
+          {hasInstagram && (
+            <section id="instagram" className="section reveal reveal-up">
+              <div className="section-head">
+                <div className="line"></div>
+                <h2 className="section-title">Instagram</h2>
+                <div className="line"></div>
+              </div>
+              <p className="section-sub">reels &amp; moments</p>
+              <div className="video-cards-wrap">
+                <div className="video-cards">
+                  {instagramVideos.map((v) => (
+                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
+                      <div className="video-card-thumb">
+                        <div className="video-card-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+                        <div className="video-card-platform instagram">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+                        </div>
+                      </div>
+                      <div className="video-card-body">
+                        <p className="video-card-caption">{v.caption || "Watch on Instagram"}</p>
+                        <p className="video-card-cta">Tap to watch ›</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
           )}
 
           {/* Get the Look */}
@@ -315,6 +387,9 @@ export default function HomePage({ products, settings, looks, sections }) {
 
       {/* Product modal */}
       {modalProduct && <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />}
+
+      {/* Video modal */}
+      {activeVideo && <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />}
 
       {/* About Me modal */}
       <InfoModal open={showAbout} onClose={() => setShowAbout(false)} subtitle={s.tagline} title="About Me">
