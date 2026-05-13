@@ -23,3 +23,5 @@ yarn-error.log*
 
 # Vercel
 .vercel
+node_modules/
+.next/
