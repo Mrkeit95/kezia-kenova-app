@@ -8,7 +8,8 @@ function extractTikTokId(url) {
 }
 
 function extractInstagramId(url) {
-  const m = url.match(/\/(reel|p)\/([A-Za-z0-9_-]+)/);
+  const clean = url.split("?")[0].replace(/\/+$/, "");
+  const m = clean.match(/\/(reel|p|tv)\/([A-Za-z0-9_-]+)/);
   return m ? m[2] : null;
 }
 

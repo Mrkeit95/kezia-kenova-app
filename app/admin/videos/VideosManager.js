@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 
 function extractTikTokId(url) {
+  // handles: /video/123, /@user/video/123, vm.tiktok.com/xxx, etc.
   const m = url.match(/video\/(\d+)/);
   return m ? m[1] : null;
 }
 
 function extractInstagramId(url) {
-  const m = url.match(/\/(reel|p)\/([A-Za-z0-9_-]+)/);
+  // strip query strings and trailing slashes first
+  const clean = url.split("?")[0].replace(/\/+$/, "");
+  const m = clean.match(/\/(reel|p|tv)\/([A-Za-z0-9_-]+)/);
   return m ? m[2] : null;
 }
 
@@ -25,7 +28,7 @@ function VideoPreview({ platform, url }) {
       {url
         ? isValid
           ? `✓ Valid ${platform === "tiktok" ? "TikTok" : "Instagram"} URL`
-          : `✗ Couldn't detect video ID — double-check the URL`
+          : `✗ Couldn't detect video ID — paste the full URL e.g. instagram.com/reel/ABC123/`
         : ""}
     </div>
   );
@@ -110,22 +113,28 @@ export default function VideosManager({ initialVideos }) {
             return (
               <div key={v.id} className="video-row">
                 <div className="video-row-thumb">
-                  {platform === "tiktok" && videoId ? (
-                    <div className="video-platform-badge tiktok">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-                      </svg>
-                    </div>
-                  ) : platform === "instagram" && videoId ? (
-                    <div className="video-platform-badge instagram">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="5" />
-                        <circle cx="12" cy="12" r="4" />
-                        <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
-                      </svg>
+                  {v.thumbnail_url ? (
+                    <div className="video-row-thumbnail">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={v.thumbnail_url} alt="" />
+                      <div className={`video-row-platform-dot ${platform}`}>
+                        {platform === "tiktok" ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <div className="video-platform-badge error">?</div>
+                    <div className={`video-platform-badge ${videoId ? platform : "error"}`}>
+                      {videoId ? (
+                        platform === "tiktok" ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+                        )
+                      ) : "?"}
+                    </div>
                   )}
                 </div>
                 <div className="product-row-info">
@@ -173,6 +182,26 @@ export default function VideosManager({ initialVideos }) {
 function VideoForm({ video, onSave, onCancel }) {
   const [form, setForm] = useState({ ...video });
   const [saving, setSaving] = useState(false);
+  const [thumbUploading, setThumbUploading] = useState(false);
+  const thumbInputRef = useRef(null);
+
+  const handleThumbUpload = async (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 8 * 1024 * 1024) { alert("Image too large — max 8MB"); return; }
+    setThumbUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop();
+      const filename = `thumb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(filename, file);
+      if (error) { alert("Upload failed: " + error.message); }
+      else {
+        const { data } = supabase.storage.from("product-images").getPublicUrl(filename);
+        setForm((prev) => ({ ...prev, thumbnail_url: data.publicUrl }));
+      }
+    } catch (e) { alert("Upload failed: " + e.message); }
+    setThumbUploading(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -205,6 +234,35 @@ function VideoForm({ video, onSave, onCancel }) {
                 ? "Copy the URL from the TikTok app — tap Share → Copy Link, or use the browser URL."
                 : "Copy the URL from the Instagram app — tap ··· → Copy Link, or use the browser URL."}
             </p>
+          </div>
+
+          {/* Thumbnail upload */}
+          <div className="form-field">
+            <label>Thumbnail <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0 }}>— screenshot from your video</span></label>
+            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              {form.thumbnail_url ? (
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.thumbnail_url} alt="Thumbnail" style={{ width: 80, height: 120, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(232,223,210,0.15)" }} />
+                  <button type="button" onClick={() => setForm({ ...form, thumbnail_url: "" })} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>×</button>
+                </div>
+              ) : null}
+              <div
+                className="brand-upload-area"
+                style={{ flex: 1, padding: "20px 16px", marginBottom: 0 }}
+                onClick={() => thumbInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); handleThumbUpload(e.dataTransfer.files[0]); }}
+              >
+                {thumbUploading ? <span>Uploading…</span> : (
+                  <span style={{ fontSize: 11 }}>
+                    {form.thumbnail_url ? "Replace thumbnail" : "Upload thumbnail"}<br />
+                    <span style={{ fontSize: 10, opacity: 0.5 }}>Screenshot the video on your phone → upload here</span>
+                  </span>
+                )}
+                <input ref={thumbInputRef} type="file" accept="image/*" onChange={(e) => handleThumbUpload(e.target.files[0])} style={{ display: "none" }} />
+              </div>
+            </div>
           </div>
 
           <div className="form-field">

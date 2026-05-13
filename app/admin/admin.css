@@ -1012,6 +1012,51 @@
   font-family: monospace;
 }
 
+.video-row-thumbnail {
+  position: relative;
+  width: 44px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1108;
+  border: 1px solid rgba(232, 223, 210, 0.1);
+  flex-shrink: 0;
+}
+
+.video-row-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-row-platform-dot {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+.video-row-platform-dot svg { width: 10px; height: 10px; }
+
+.video-row-platform-dot.tiktok {
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(105,201,208,0.5);
+  color: #69c9d0;
+}
+
+.video-row-platform-dot.instagram {
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(193,53,132,0.5);
+  color: #e1306c;
+}
+
 /* Brand work upload */
 .brand-upload-area {
   border: 1px dashed rgba(232, 223, 210, 0.2);
