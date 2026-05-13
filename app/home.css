@@ -322,6 +322,85 @@
   letter-spacing: 0.28em;
 }
 
+/* About Me */
+.about-card {
+  background: #ffffff;
+  border: 1px solid rgba(26, 20, 16, 0.07);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 16px rgba(26, 20, 16, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.about-card p {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 18px;
+  line-height: 1.8;
+  color: rgba(26, 20, 16, 0.75);
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+.about-card p:first-child::first-letter {
+  font-size: 3em;
+  line-height: 0.75;
+  float: left;
+  margin-right: 8px;
+  margin-top: 6px;
+  color: #b07d4a;
+  font-weight: 300;
+}
+
+/* Brand Work carousel */
+.brand-carousel-wrap {
+  width: calc(100% + 64px);
+  margin-left: -32px;
+  margin-right: -32px;
+  overflow: hidden;
+}
+
+.brand-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 6px 32px 18px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.brand-carousel::-webkit-scrollbar { display: none; }
+
+.brand-card {
+  flex: 0 0 auto;
+  width: 260px;
+  aspect-ratio: 4 / 5;
+  scroll-snap-align: start;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f0ede8;
+  border: 1px solid rgba(26, 20, 16, 0.07);
+  box-shadow: 0 2px 12px rgba(26, 20, 16, 0.07);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.brand-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(26, 20, 16, 0.12);
+}
+
+.brand-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.brand-card:hover img { transform: scale(1.04); }
+
 /* Looks Grid (Get the Look section) */
 .looks-grid {
   display: grid;
@@ -724,6 +803,11 @@
 
   .looks-grid { gap: 10px; }
   .look-title { font-size: 16px; }
+  .about-card { padding: 22px; }
+  .about-card p { font-size: 16px; }
+  .brand-carousel-wrap { width: calc(100% + 44px); margin-left: -22px; margin-right: -22px; }
+  .brand-carousel { padding: 6px 22px 16px; }
+  .brand-card { width: 220px; }
 
   .journal-body { padding: 18px 20px 20px; }
   .journal-title { font-size: 20px; }

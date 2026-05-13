@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import HeroImagesUpload from "@/components/HeroImagesUpload";
@@ -14,9 +14,13 @@ export default function SettingsForm({ initialSettings }) {
     email: initialSettings.email || "keziakenwork@gmail.com",
     hero_image: initialSettings.hero_image || "/kezia.jpeg",
     hero_images: initialSettings.hero_images || (initialSettings.hero_image ? [initialSettings.hero_image] : []),
+    about_text: initialSettings.about_text || "",
+    brand_images: initialSettings.brand_images || [],
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [brandUploading, setBrandUploading] = useState(false);
+  const brandInputRef = useRef(null);
   const router = useRouter();
 
   const handleSave = async (e) => {
@@ -24,7 +28,6 @@ export default function SettingsForm({ initialSettings }) {
     setSaving(true);
     setSaved(false);
     const supabase = createClient();
-    // Keep hero_image in sync for backwards compatibility (first hero image)
     const payload = {
       ...form,
       hero_image: form.hero_images?.[0] || form.hero_image,
@@ -40,8 +43,49 @@ export default function SettingsForm({ initialSettings }) {
     setSaving(false);
   };
 
+  const handleBrandUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    setBrandUploading(true);
+    const supabase = createClient();
+    const newUrls = [];
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 8 * 1024 * 1024) {
+        alert(`${file.name} is too large — max 8MB`);
+        continue;
+      }
+      try {
+        const ext = file.name.split(".").pop();
+        const filename = `brand-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+        const { error } = await supabase.storage.from("product-images").upload(filename, file);
+        if (error) {
+          alert("Upload failed: " + error.message);
+        } else {
+          const { data } = supabase.storage.from("product-images").getPublicUrl(filename);
+          newUrls.push(data.publicUrl);
+        }
+      } catch (e) {
+        alert("Upload failed: " + e.message);
+      }
+    }
+
+    if (newUrls.length > 0) {
+      setForm((prev) => ({ ...prev, brand_images: [...prev.brand_images, ...newUrls] }));
+    }
+    setBrandUploading(false);
+  };
+
+  const removeBrandImage = (index) => {
+    const updated = [...form.brand_images];
+    updated.splice(index, 1);
+    setForm({ ...form, brand_images: updated });
+  };
+
   return (
     <form onSubmit={handleSave}>
+
+      {/* Hero Photos */}
       <div className="admin-section">
         <div className="admin-section-head">
           <h2 className="admin-section-title">Hero Photos</h2>
@@ -55,6 +99,99 @@ export default function SettingsForm({ initialSettings }) {
         />
       </div>
 
+      {/* About Me */}
+      <div className="admin-section">
+        <div className="admin-section-head">
+          <h2 className="admin-section-title">About Me</h2>
+          <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
+            shown as a card on your homepage
+          </span>
+        </div>
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Your Bio</label>
+            <textarea
+              value={form.about_text}
+              onChange={(e) => setForm({ ...form, about_text: e.target.value })}
+              placeholder="Tell your story — who you are, where you're from, what you love…"
+              rows={6}
+              style={{ lineHeight: 1.7, fontSize: 14 }}
+            />
+            <p style={{ fontSize: 10, color: "rgba(232,223,210,0.4)", marginTop: 6, letterSpacing: "0.04em" }}>
+              This appears in the About Me section on your homepage. Keep it personal.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand Work */}
+      <div className="admin-section">
+        <div className="admin-section-head">
+          <h2 className="admin-section-title">Brand Work</h2>
+          <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
+            {form.brand_images.length} {form.brand_images.length === 1 ? "image" : "images"}
+          </span>
+        </div>
+
+        <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 20, lineHeight: 1.6 }}>
+          Upload photos of your brand collaborations — campaign shots, product placements, anything that shows your work with brands. These appear as a scrollable gallery on your homepage.
+        </p>
+
+        {/* Upload area */}
+        <div
+          className="brand-upload-area"
+          onClick={() => brandInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); handleBrandUpload(e.dataTransfer.files); }}
+        >
+          {brandUploading ? (
+            <span>Uploading…</span>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28, marginBottom: 10, color: "rgba(212,165,116,0.6)" }}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>Click to upload or drag images here</span>
+              <span style={{ fontSize: 10, marginTop: 6, color: "rgba(232,223,210,0.3)", letterSpacing: "0.1em" }}>
+                From your phone or computer · multiple at once · max 8MB each
+              </span>
+            </>
+          )}
+          <input
+            ref={brandInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => handleBrandUpload(e.target.files)}
+            style={{ display: "none" }}
+            capture={false}
+          />
+        </div>
+
+        {/* Brand image grid */}
+        {form.brand_images.length > 0 && (
+          <div className="brand-images-grid">
+            {form.brand_images.map((src, i) => (
+              <div key={i} className="brand-image-tile">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`Brand ${i + 1}`} />
+                <button
+                  type="button"
+                  onClick={() => removeBrandImage(i)}
+                  className="brand-image-remove"
+                  aria-label="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Profile */}
       <div className="admin-section">
         <div className="admin-section-head">
           <h2 className="admin-section-title">Profile</h2>
@@ -69,7 +206,6 @@ export default function SettingsForm({ initialSettings }) {
               placeholder="Bali · Indonesia"
             />
           </div>
-
           <div className="form-field">
             <label>Tagline</label>
             <input
@@ -82,6 +218,7 @@ export default function SettingsForm({ initialSettings }) {
         </div>
       </div>
 
+      {/* Links */}
       <div className="admin-section">
         <div className="admin-section-head">
           <h2 className="admin-section-title">Links</h2>
@@ -96,7 +233,6 @@ export default function SettingsForm({ initialSettings }) {
               placeholder="https://www.instagram.com/..."
             />
           </div>
-
           <div className="form-field">
             <label>TikTok URL</label>
             <input
@@ -106,7 +242,6 @@ export default function SettingsForm({ initialSettings }) {
               placeholder="https://www.tiktok.com/@..."
             />
           </div>
-
           <div className="form-field">
             <label>Contact Email</label>
             <input

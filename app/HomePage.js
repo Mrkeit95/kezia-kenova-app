@@ -18,6 +18,8 @@ const DEFAULTS = {
   email: "keziakenwork@gmail.com",
   hero_image: "/kezia.jpeg",
   hero_images: [],
+  about_text: "",
+  brand_images: [],
 };
 
 const TERMS_CONTENT = [
@@ -89,13 +91,15 @@ export default function HomePage({ products, settings, looks, sections }) {
     (sec.product_ids || []).some((id) => productMap[id])
   );
 
+  const hasAbout = s.about_text && s.about_text.trim().length > 0;
+  const hasBrands = s.brand_images && s.brand_images.length > 0;
+  const hasLooks = looks && looks.length > 0;
+  const showTabs = hasAbout || hasBrands || hasLooks || visibleSections.length > 0;
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  const hasLooks = looks && looks.length > 0;
-  const showTabs = visibleSections.length > 0 || hasLooks;
 
   return (
     <>
@@ -103,7 +107,7 @@ export default function HomePage({ products, settings, looks, sections }) {
       <main className="page">
         <div className="grain"></div>
 
-        {/* Full-width blurred background — hero image bleeds to edges */}
+        {/* Full-width blurred background */}
         <div className="page-blur-bg" aria-hidden="true">
           {heroImages[0] && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -125,7 +129,7 @@ export default function HomePage({ products, settings, looks, sections }) {
             <p className="tagline">{s.tagline}</p>
           </header>
 
-          {/* Social icons — icon only */}
+          {/* Social icons */}
           <nav className="social-icons">
             {s.instagram_url && (
               <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
@@ -153,10 +157,20 @@ export default function HomePage({ products, settings, looks, sections }) {
             )}
           </nav>
 
-          {/* Scrollable section tab bar */}
+          {/* Section tab bar */}
           {showTabs && (
             <div className="section-tabs-wrap">
               <div className="section-tabs">
+                {hasAbout && (
+                  <button className="section-tab" onClick={() => scrollToSection("about")}>
+                    About Me
+                  </button>
+                )}
+                {hasBrands && (
+                  <button className="section-tab" onClick={() => scrollToSection("brand-work")}>
+                    Brand Work
+                  </button>
+                )}
                 {hasLooks && (
                   <button className="section-tab" onClick={() => scrollToSection("looks")}>
                     Get the Look
@@ -175,6 +189,45 @@ export default function HomePage({ products, settings, looks, sections }) {
             </div>
           )}
 
+          {/* About Me */}
+          {hasAbout && (
+            <section id="about" className="section reveal reveal-up">
+              <div className="section-head">
+                <div className="line"></div>
+                <h2 className="section-title">About Me</h2>
+                <div className="line"></div>
+              </div>
+              <div className="about-card">
+                {s.about_text.split("\n\n").map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Brand Work */}
+          {hasBrands && (
+            <section id="brand-work" className="section reveal reveal-up">
+              <div className="section-head">
+                <div className="line"></div>
+                <h2 className="section-title">Brand Work</h2>
+                <div className="line"></div>
+              </div>
+              <p className="section-sub">collaborations & campaigns</p>
+              <div className="brand-carousel-wrap">
+                <div className="brand-carousel">
+                  {s.brand_images.map((src, i) => (
+                    <div key={i} className="brand-card">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Brand collaboration ${i + 1}`} loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Get the Look */}
           {hasLooks && (
             <section id="looks" className="section reveal reveal-left">
               <div className="section-head">
@@ -207,6 +260,7 @@ export default function HomePage({ products, settings, looks, sections }) {
             </section>
           )}
 
+          {/* Product sections */}
           {visibleSections.map((sec, idx) => {
             const sectionProducts = (sec.product_ids || [])
               .map((id) => productMap[id])
