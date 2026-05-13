@@ -322,30 +322,25 @@
   letter-spacing: 0.28em;
 }
 
-/* About Me */
-.about-card {
-  background: #ffffff;
-  border: 1px solid rgba(26, 20, 16, 0.07);
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 16px rgba(26, 20, 16, 0.06);
+/* About Me modal body */
+.about-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
-.about-card p {
+.about-modal-body p {
   font-family: "Cormorant Garamond", serif;
   font-size: 18px;
-  line-height: 1.8;
-  color: rgba(26, 20, 16, 0.75);
+  line-height: 1.85;
+  color: rgba(26, 20, 16, 0.72);
   letter-spacing: 0.02em;
   font-weight: 400;
 }
 
-.about-card p:first-child::first-letter {
-  font-size: 3em;
-  line-height: 0.75;
+.about-modal-body p:first-child::first-letter {
+  font-size: 3.2em;
+  line-height: 0.72;
   float: left;
   margin-right: 8px;
   margin-top: 6px;
@@ -353,53 +348,148 @@
   font-weight: 300;
 }
 
-/* Brand Work carousel */
-.brand-carousel-wrap {
-  width: calc(100% + 64px);
-  margin-left: -32px;
-  margin-right: -32px;
-  overflow: hidden;
-}
-
-.brand-carousel {
+/* Gallery / lightbox modal */
+.gallery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(10, 8, 6, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: modalFadeIn 0.28s ease both;
+}
+
+.gallery-modal {
+  width: 100%;
+  max-width: 540px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 6px 32px 18px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  margin-bottom: 14px;
+  padding: 0 4px;
 }
 
-.brand-carousel::-webkit-scrollbar { display: none; }
+.gallery-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #faf9f7;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
 
-.brand-card {
-  flex: 0 0 auto;
-  width: 260px;
-  aspect-ratio: 4 / 5;
-  scroll-snap-align: start;
-  border-radius: 10px;
+.gallery-count {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(250, 249, 247, 0.4);
+  text-transform: uppercase;
+}
+
+.gallery-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 249, 247, 0.08);
+  border: 1px solid rgba(250, 249, 247, 0.15);
+  border-radius: 50%;
+  color: #faf9f7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.gallery-close svg { width: 16px; height: 16px; }
+.gallery-close:hover { background: rgba(250, 249, 247, 0.16); border-color: rgba(250, 249, 247, 0.3); }
+
+.gallery-img-wrap {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
   overflow: hidden;
-  background: #f0ede8;
-  border: 1px solid rgba(26, 20, 16, 0.07);
-  box-shadow: 0 2px 12px rgba(26, 20, 16, 0.07);
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 5;
+  max-height: 64vh;
 }
 
-.brand-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(26, 20, 16, 0.12);
-}
-
-.brand-card img {
+.gallery-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: zoomIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.brand-card:hover img { transform: scale(1.04); }
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(10, 8, 6, 0.55);
+  border: 1px solid rgba(250, 249, 247, 0.18);
+  border-radius: 50%;
+  color: #faf9f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
+.gallery-nav svg { width: 18px; height: 18px; }
+.gallery-nav:hover { background: rgba(250, 249, 247, 0.18); border-color: rgba(250, 249, 247, 0.4); }
+.gallery-nav-prev { left: 12px; }
+.gallery-nav-next { right: 12px; }
+
+.gallery-thumbs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0 4px;
+  scrollbar-width: none;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gallery-thumbs::-webkit-scrollbar { display: none; }
+
+.gallery-thumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #222;
+  opacity: 0.55;
+}
+
+.gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-thumb:hover { opacity: 0.85; }
+.gallery-thumb.active { border-color: #faf9f7; opacity: 1; }
 
 /* Looks Grid (Get the Look section) */
 .looks-grid {
@@ -803,11 +893,10 @@
 
   .looks-grid { gap: 10px; }
   .look-title { font-size: 16px; }
-  .about-card { padding: 22px; }
-  .about-card p { font-size: 16px; }
-  .brand-carousel-wrap { width: calc(100% + 44px); margin-left: -22px; margin-right: -22px; }
-  .brand-carousel { padding: 6px 22px 16px; }
-  .brand-card { width: 220px; }
+  .about-modal-body p { font-size: 16px; }
+  .gallery-modal { max-width: 100%; }
+  .gallery-img-wrap { max-height: 55vh; }
+  .gallery-thumb { width: 44px; height: 44px; }
 
   .journal-body { padding: 18px 20px 20px; }
   .journal-title { font-size: 20px; }

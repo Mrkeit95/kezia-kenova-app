@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import LoadingScreen from "@/components/LoadingScreen";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -20,6 +20,7 @@ const DEFAULTS = {
   hero_images: [],
   about_text: "",
   brand_images: [],
+  local_brand_images: [],
 };
 
 const TERMS_CONTENT = [
@@ -27,7 +28,6 @@ const TERMS_CONTENT = [
   { h: "Affiliate links", p: "Many product links here are affiliate. If you click through and buy, I may earn a small commission, at no cost to you. I only recommend products I genuinely use or love." },
   { h: "External sites", p: "Clicking an affiliate or social link takes you to a third-party site. I'm not responsible for their content or privacy practices." },
   { h: "Content", p: "All original photos, words, and design here belong to Kezia Ken. Please don't reproduce without asking." },
-  { h: "Newsletter", p: "By subscribing, you agree to receive occasional emails. Unsubscribe any time." },
   { h: "Contact", p: "Questions? Email keziakenwork@gmail.com." },
 ];
 
@@ -40,6 +40,84 @@ const PRIVACY_CONTENT = [
   { h: "Children", p: "This site isn't directed at children under 13, and I don't knowingly collect their data." },
 ];
 
+// Lightbox modal for image galleries
+function GalleryModal({ title, images, open, onClose }) {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => { if (open) setActive(0); }, [open]);
+
+  const prev = useCallback(() => setActive((a) => (a - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setActive((a) => (a + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, prev, next, onClose]);
+
+  if (!open || !images.length) return null;
+
+  return (
+    <div className="gallery-overlay" onClick={onClose}>
+      <div className="gallery-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="gallery-header">
+          <span className="gallery-title">{title}</span>
+          <span className="gallery-count">{active + 1} / {images.length}</span>
+          <button className="gallery-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Main image */}
+        <div className="gallery-img-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={images[active]} alt={`${title} ${active + 1}`} className="gallery-img" />
+
+          {images.length > 1 && (
+            <>
+              <button className="gallery-nav gallery-nav-prev" onClick={prev} aria-label="Previous">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button className="gallery-nav gallery-nav-next" onClick={next} aria-label="Next">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <div className="gallery-thumbs">
+            {images.map((src, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className={`gallery-thumb ${i === active ? "active" : ""}`}
+                aria-label={`Image ${i + 1}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage({ products, settings, looks, sections }) {
   const s = { ...DEFAULTS, ...settings };
   const list = products;
@@ -47,37 +125,31 @@ export default function HomePage({ products, settings, looks, sections }) {
   const [modalProduct, setModalProduct] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showBrands, setShowBrands] = useState(false);
+  const [showLocalBrands, setShowLocalBrands] = useState(false);
 
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("home_scroll");
     if (savedScroll) {
       sessionStorage.removeItem("home_scroll");
-      setTimeout(() => {
-        window.scrollTo({ top: parseInt(savedScroll), behavior: "instant" });
-      }, 50);
+      setTimeout(() => window.scrollTo({ top: parseInt(savedScroll), behavior: "instant" }), 50);
     }
   }, []);
 
-  const saveScrollForCategory = () => {
-    sessionStorage.setItem("home_scroll", String(window.scrollY));
-  };
+  const saveScrollForCategory = () => sessionStorage.setItem("home_scroll", String(window.scrollY));
 
   useEffect(() => {
-    const anyOpen = modalProduct || showTerms || showPrivacy;
+    const anyOpen = modalProduct || showTerms || showPrivacy || showAbout || showBrands || showLocalBrands;
     document.body.style.overflow = anyOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [modalProduct, showTerms, showPrivacy]);
+  }, [modalProduct, showTerms, showPrivacy, showAbout, showBrands, showLocalBrands]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("revealed");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add("revealed"); observer.unobserve(entry.target); }
+      }),
       { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
     );
     document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
@@ -93,8 +165,9 @@ export default function HomePage({ products, settings, looks, sections }) {
 
   const hasAbout = s.about_text && s.about_text.trim().length > 0;
   const hasBrands = s.brand_images && s.brand_images.length > 0;
+  const hasLocalBrands = s.local_brand_images && s.local_brand_images.length > 0;
   const hasLooks = looks && looks.length > 0;
-  const showTabs = hasAbout || hasBrands || hasLooks || visibleSections.length > 0;
+  const showTabs = hasAbout || hasBrands || hasLocalBrands || hasLooks || visibleSections.length > 0;
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -107,12 +180,8 @@ export default function HomePage({ products, settings, looks, sections }) {
       <main className="page">
         <div className="grain"></div>
 
-        {/* Full-width blurred background */}
         <div className="page-blur-bg" aria-hidden="true">
-          {heroImages[0] && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={heroImages[0]} alt="" />
-          )}
+          {heroImages[0] && <img src={heroImages[0]} alt="" />}
         </div>
 
         <div className="shell">
@@ -134,9 +203,7 @@ export default function HomePage({ products, settings, looks, sections }) {
             {s.instagram_url && (
               <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+                  <rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
                 </svg>
               </a>
             )}
@@ -150,81 +217,35 @@ export default function HomePage({ products, settings, looks, sections }) {
             {s.email && (
               <a href={`mailto:${s.email}`} className="social-icon" aria-label="Email">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M3 7l9 6 9-6" />
+                  <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
                 </svg>
               </a>
             )}
           </nav>
 
-          {/* Section tab bar */}
+          {/* Tab bar — About + Brand tabs open modals, section tabs scroll */}
           {showTabs && (
             <div className="section-tabs-wrap">
               <div className="section-tabs">
                 {hasAbout && (
-                  <button className="section-tab" onClick={() => scrollToSection("about")}>
-                    About Me
-                  </button>
+                  <button className="section-tab" onClick={() => setShowAbout(true)}>About Me</button>
                 )}
                 {hasBrands && (
-                  <button className="section-tab" onClick={() => scrollToSection("brand-work")}>
-                    Brand Work
-                  </button>
+                  <button className="section-tab" onClick={() => setShowBrands(true)}>Brand Work</button>
+                )}
+                {hasLocalBrands && (
+                  <button className="section-tab" onClick={() => setShowLocalBrands(true)}>Local Brands</button>
                 )}
                 {hasLooks && (
-                  <button className="section-tab" onClick={() => scrollToSection("looks")}>
-                    Get the Look
-                  </button>
+                  <button className="section-tab" onClick={() => scrollToSection("looks")}>Get the Look</button>
                 )}
                 {visibleSections.map((sec) => (
-                  <button
-                    key={sec.id}
-                    className="section-tab"
-                    onClick={() => scrollToSection(`section-${sec.slug}`)}
-                  >
+                  <button key={sec.id} className="section-tab" onClick={() => scrollToSection(`section-${sec.slug}`)}>
                     {sec.title}
                   </button>
                 ))}
               </div>
             </div>
-          )}
-
-          {/* About Me */}
-          {hasAbout && (
-            <section id="about" className="section reveal reveal-up">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">About Me</h2>
-                <div className="line"></div>
-              </div>
-              <div className="about-card">
-                {s.about_text.split("\n\n").map((para, i) => (
-                  <p key={i}>{para}</p>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Brand Work */}
-          {hasBrands && (
-            <section id="brand-work" className="section reveal reveal-up">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">Brand Work</h2>
-                <div className="line"></div>
-              </div>
-              <p className="section-sub">collaborations & campaigns</p>
-              <div className="brand-carousel-wrap">
-                <div className="brand-carousel">
-                  {s.brand_images.map((src, i) => (
-                    <div key={i} className="brand-card">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={`Brand collaboration ${i + 1}`} loading="lazy" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
           )}
 
           {/* Get the Look */}
@@ -240,10 +261,7 @@ export default function HomePage({ products, settings, looks, sections }) {
                 {looks.slice(0, 4).map((look) => (
                   <Link key={look.id} href={`/looks/${look.id}`} className="look-card">
                     <div className="look-img">
-                      {look.cover_image && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={look.cover_image} alt={look.title} loading="lazy" />
-                      )}
+                      {look.cover_image && <img src={look.cover_image} alt={look.title} loading="lazy" />}
                     </div>
                     <div className="look-body">
                       <div className="look-title">{look.title}</div>
@@ -262,17 +280,10 @@ export default function HomePage({ products, settings, looks, sections }) {
 
           {/* Product sections */}
           {visibleSections.map((sec, idx) => {
-            const sectionProducts = (sec.product_ids || [])
-              .map((id) => productMap[id])
-              .filter(Boolean)
-              .slice(0, 8);
+            const sectionProducts = (sec.product_ids || []).map((id) => productMap[id]).filter(Boolean).slice(0, 8);
             const revealClass = idx % 2 === 0 ? "reveal-up" : "reveal-right";
             return (
-              <section
-                key={sec.id}
-                id={`section-${sec.slug}`}
-                className={`section reveal ${revealClass}`}
-              >
+              <section key={sec.id} id={`section-${sec.slug}`} className={`section reveal ${revealClass}`}>
                 <div className="section-head">
                   <div className="line"></div>
                   <h2 className="section-title">{sec.title}</h2>
@@ -281,11 +292,7 @@ export default function HomePage({ products, settings, looks, sections }) {
                 {sec.subtitle && <p className="section-sub">{sec.subtitle}</p>}
                 <ProductCarousel products={sectionProducts} onProductClick={setModalProduct} />
                 <div className="view-all-wrap">
-                  <Link
-                    href={`/category/${sec.slug}`}
-                    onClick={saveScrollForCategory}
-                    className="view-all"
-                  >
+                  <Link href={`/category/${sec.slug}`} onClick={saveScrollForCategory} className="view-all">
                     View all {(sec.product_ids || []).length} {sec.title.toLowerCase()} ›
                   </Link>
                 </div>
@@ -301,30 +308,38 @@ export default function HomePage({ products, settings, looks, sections }) {
               <button onClick={() => setShowPrivacy(true)} className="footer-link-btn">Privacy</button>
             </div>
             <p>© {new Date().getFullYear()} Kezia Ken</p>
-            <p className="disclaimer">
-              Some links are affiliate — I may earn a small commission, at no cost to you.
-            </p>
+            <p className="disclaimer">Some links are affiliate — I may earn a small commission, at no cost to you.</p>
           </footer>
         </div>
       </main>
 
-      {modalProduct && (
-        <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />
-      )}
+      {/* Product modal */}
+      {modalProduct && <ProductModal product={modalProduct} onClose={() => setModalProduct(null)} />}
 
-      <InfoModal open={showTerms} onClose={() => setShowTerms(false)} subtitle="Last updated" title="Terms of Service">
-        <div className="legal-modal-content">
-          {TERMS_CONTENT.map((s, i) => (
-            <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>
-          ))}
+      {/* About Me modal */}
+      <InfoModal open={showAbout} onClose={() => setShowAbout(false)} subtitle={s.tagline} title="About Me">
+        <div className="about-modal-body">
+          {s.about_text.split("\n\n").map((para, i) => <p key={i}>{para}</p>)}
         </div>
       </InfoModal>
 
+      {/* Brand Work lightbox */}
+      <GalleryModal title="Brand Work" images={s.brand_images} open={showBrands} onClose={() => setShowBrands(false)} />
+
+      {/* Local Brands lightbox */}
+      <GalleryModal title="Local Brands" images={s.local_brand_images} open={showLocalBrands} onClose={() => setShowLocalBrands(false)} />
+
+      {/* Terms */}
+      <InfoModal open={showTerms} onClose={() => setShowTerms(false)} subtitle="Last updated" title="Terms of Service">
+        <div className="legal-modal-content">
+          {TERMS_CONTENT.map((s, i) => <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>)}
+        </div>
+      </InfoModal>
+
+      {/* Privacy */}
       <InfoModal open={showPrivacy} onClose={() => setShowPrivacy(false)} subtitle="Last updated" title="Privacy Policy">
         <div className="legal-modal-content">
-          {PRIVACY_CONTENT.map((s, i) => (
-            <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>
-          ))}
+          {PRIVACY_CONTENT.map((s, i) => <section key={i}><h3>{s.h}</h3><p>{s.p}</p></section>)}
         </div>
       </InfoModal>
     </>

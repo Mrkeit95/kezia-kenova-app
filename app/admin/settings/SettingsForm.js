@@ -5,6 +5,63 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 import HeroImagesUpload from "@/components/HeroImagesUpload";
 
+function ImageUploadBlock({ title, description, images, uploading, inputRef, onUpload, onRemove }) {
+  return (
+    <div className="admin-section">
+      <div className="admin-section-head">
+        <h2 className="admin-section-title">{title}</h2>
+        <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
+          {images.length} {images.length === 1 ? "image" : "images"}
+        </span>
+      </div>
+      <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 20, lineHeight: 1.6 }}>
+        {description}
+      </p>
+      <div
+        className="brand-upload-area"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => { e.preventDefault(); onUpload(e.dataTransfer.files); }}
+      >
+        {uploading ? (
+          <span>Uploading…</span>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28, marginBottom: 10, color: "rgba(212,165,116,0.6)" }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>Click to upload or drag images here</span>
+            <span style={{ fontSize: 10, marginTop: 6, color: "rgba(232,223,210,0.3)", letterSpacing: "0.1em" }}>
+              From your phone or computer · multiple at once · max 8MB each
+            </span>
+          </>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => onUpload(e.target.files)}
+          style={{ display: "none" }}
+        />
+      </div>
+      {images.length > 0 && (
+        <div className="brand-images-grid">
+          {images.map((src, i) => (
+            <div key={i} className="brand-image-tile">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`${title} ${i + 1}`} />
+              <button type="button" onClick={() => onRemove(i)} className="brand-image-remove" aria-label="Remove">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsForm({ initialSettings }) {
   const [form, setForm] = useState({
     location: initialSettings.location || "Bali · Indonesia",
@@ -16,11 +73,15 @@ export default function SettingsForm({ initialSettings }) {
     hero_images: initialSettings.hero_images || (initialSettings.hero_image ? [initialSettings.hero_image] : []),
     about_text: initialSettings.about_text || "",
     brand_images: initialSettings.brand_images || [],
+    local_brand_images: initialSettings.local_brand_images || [],
   });
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [brandUploading, setBrandUploading] = useState(false);
+  const [localBrandUploading, setLocalBrandUploading] = useState(false);
   const brandInputRef = useRef(null);
+  const localBrandInputRef = useRef(null);
   const router = useRouter();
 
   const handleSave = async (e) => {
@@ -28,58 +89,50 @@ export default function SettingsForm({ initialSettings }) {
     setSaving(true);
     setSaved(false);
     const supabase = createClient();
-    const payload = {
-      ...form,
-      hero_image: form.hero_images?.[0] || form.hero_image,
-    };
+    const payload = { ...form, hero_image: form.hero_images?.[0] || form.hero_image };
     const { error } = await supabase.from("settings").update(payload).eq("id", 1);
-    if (error) {
-      alert("Save failed: " + error.message);
-    } else {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      router.refresh();
-    }
+    if (error) { alert("Save failed: " + error.message); }
+    else { setSaved(true); setTimeout(() => setSaved(false), 2500); router.refresh(); }
     setSaving(false);
   };
 
-  const handleBrandUpload = async (files) => {
-    if (!files || files.length === 0) return;
-    setBrandUploading(true);
+  const uploadImages = async (files, setUploading, prefix) => {
+    if (!files || files.length === 0) return [];
+    setUploading(true);
     const supabase = createClient();
     const newUrls = [];
-
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) continue;
-      if (file.size > 8 * 1024 * 1024) {
-        alert(`${file.name} is too large — max 8MB`);
-        continue;
-      }
+      if (file.size > 8 * 1024 * 1024) { alert(`${file.name} is too large — max 8MB`); continue; }
       try {
         const ext = file.name.split(".").pop();
-        const filename = `brand-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+        const filename = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
         const { error } = await supabase.storage.from("product-images").upload(filename, file);
-        if (error) {
-          alert("Upload failed: " + error.message);
-        } else {
+        if (error) { alert("Upload failed: " + error.message); }
+        else {
           const { data } = supabase.storage.from("product-images").getPublicUrl(filename);
           newUrls.push(data.publicUrl);
         }
-      } catch (e) {
-        alert("Upload failed: " + e.message);
-      }
+      } catch (e) { alert("Upload failed: " + e.message); }
     }
-
-    if (newUrls.length > 0) {
-      setForm((prev) => ({ ...prev, brand_images: [...prev.brand_images, ...newUrls] }));
-    }
-    setBrandUploading(false);
+    setUploading(false);
+    return newUrls;
   };
 
-  const removeBrandImage = (index) => {
-    const updated = [...form.brand_images];
+  const handleBrandUpload = async (files) => {
+    const urls = await uploadImages(files, setBrandUploading, "brand");
+    if (urls.length > 0) setForm((prev) => ({ ...prev, brand_images: [...prev.brand_images, ...urls] }));
+  };
+
+  const handleLocalBrandUpload = async (files) => {
+    const urls = await uploadImages(files, setLocalBrandUploading, "local-brand");
+    if (urls.length > 0) setForm((prev) => ({ ...prev, local_brand_images: [...prev.local_brand_images, ...urls] }));
+  };
+
+  const removeImage = (field, index) => {
+    const updated = [...form[field]];
     updated.splice(index, 1);
-    setForm({ ...form, brand_images: updated });
+    setForm({ ...form, [field]: updated });
   };
 
   return (
@@ -103,9 +156,7 @@ export default function SettingsForm({ initialSettings }) {
       <div className="admin-section">
         <div className="admin-section-head">
           <h2 className="admin-section-title">About Me</h2>
-          <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
-            shown as a card on your homepage
-          </span>
+          <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>shown as a tab on your homepage</span>
         </div>
         <div className="form-grid">
           <div className="form-field">
@@ -118,78 +169,33 @@ export default function SettingsForm({ initialSettings }) {
               style={{ lineHeight: 1.7, fontSize: 14 }}
             />
             <p style={{ fontSize: 10, color: "rgba(232,223,210,0.4)", marginTop: 6, letterSpacing: "0.04em" }}>
-              This appears in the About Me section on your homepage. Keep it personal.
+              Clicking "About Me" in the tab bar opens this as a popup. Blank lines = new paragraph.
             </p>
           </div>
         </div>
       </div>
 
       {/* Brand Work */}
-      <div className="admin-section">
-        <div className="admin-section-head">
-          <h2 className="admin-section-title">Brand Work</h2>
-          <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
-            {form.brand_images.length} {form.brand_images.length === 1 ? "image" : "images"}
-          </span>
-        </div>
+      <ImageUploadBlock
+        title="Brand Work"
+        description="Campaign shots, product placements, brand collaborations — clicking 'Brand Work' in the tab bar opens these as a lightbox."
+        images={form.brand_images}
+        uploading={brandUploading}
+        inputRef={brandInputRef}
+        onUpload={handleBrandUpload}
+        onRemove={(i) => removeImage("brand_images", i)}
+      />
 
-        <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 20, lineHeight: 1.6 }}>
-          Upload photos of your brand collaborations — campaign shots, product placements, anything that shows your work with brands. These appear as a scrollable gallery on your homepage.
-        </p>
-
-        {/* Upload area */}
-        <div
-          className="brand-upload-area"
-          onClick={() => brandInputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); handleBrandUpload(e.dataTransfer.files); }}
-        >
-          {brandUploading ? (
-            <span>Uploading…</span>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28, marginBottom: 10, color: "rgba(212,165,116,0.6)" }}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              <span>Click to upload or drag images here</span>
-              <span style={{ fontSize: 10, marginTop: 6, color: "rgba(232,223,210,0.3)", letterSpacing: "0.1em" }}>
-                From your phone or computer · multiple at once · max 8MB each
-              </span>
-            </>
-          )}
-          <input
-            ref={brandInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => handleBrandUpload(e.target.files)}
-            style={{ display: "none" }}
-            capture={false}
-          />
-        </div>
-
-        {/* Brand image grid */}
-        {form.brand_images.length > 0 && (
-          <div className="brand-images-grid">
-            {form.brand_images.map((src, i) => (
-              <div key={i} className="brand-image-tile">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`Brand ${i + 1}`} />
-                <button
-                  type="button"
-                  onClick={() => removeBrandImage(i)}
-                  className="brand-image-remove"
-                  aria-label="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Local Brands */}
+      <ImageUploadBlock
+        title="Local Brands"
+        description="Local brand collaborations and partnerships — clicking 'Local Brands' in the tab bar opens these as a lightbox."
+        images={form.local_brand_images}
+        uploading={localBrandUploading}
+        inputRef={localBrandInputRef}
+        onUpload={handleLocalBrandUpload}
+        onRemove={(i) => removeImage("local_brand_images", i)}
+      />
 
       {/* Profile */}
       <div className="admin-section">
@@ -199,21 +205,11 @@ export default function SettingsForm({ initialSettings }) {
         <div className="form-grid">
           <div className="form-field">
             <label>Location</label>
-            <input
-              type="text"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="Bali · Indonesia"
-            />
+            <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Bali · Indonesia" />
           </div>
           <div className="form-field">
             <label>Tagline</label>
-            <input
-              type="text"
-              value={form.tagline}
-              onChange={(e) => setForm({ ...form, tagline: e.target.value })}
-              placeholder="model · creator · storyteller"
-            />
+            <input type="text" value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} placeholder="model · creator · storyteller" />
           </div>
         </div>
       </div>
@@ -226,43 +222,22 @@ export default function SettingsForm({ initialSettings }) {
         <div className="form-grid">
           <div className="form-field">
             <label>Instagram URL</label>
-            <input
-              type="url"
-              value={form.instagram_url}
-              onChange={(e) => setForm({ ...form, instagram_url: e.target.value })}
-              placeholder="https://www.instagram.com/..."
-            />
+            <input type="url" value={form.instagram_url} onChange={(e) => setForm({ ...form, instagram_url: e.target.value })} placeholder="https://www.instagram.com/..." />
           </div>
           <div className="form-field">
             <label>TikTok URL</label>
-            <input
-              type="url"
-              value={form.tiktok_url}
-              onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })}
-              placeholder="https://www.tiktok.com/@..."
-            />
+            <input type="url" value={form.tiktok_url} onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })} placeholder="https://www.tiktok.com/@..." />
           </div>
           <div className="form-field">
             <label>Contact Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="hello@example.com"
-            />
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="hello@example.com" />
           </div>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "flex-end" }}>
-        {saved && (
-          <span style={{ fontSize: 12, color: "#d4a574", letterSpacing: "0.16em", textTransform: "uppercase" }}>
-            ✓ Saved
-          </span>
-        )}
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? "Saving…" : "Save Changes"}
-        </button>
+        {saved && <span style={{ fontSize: 12, color: "#d4a574", letterSpacing: "0.16em", textTransform: "uppercase" }}>✓ Saved</span>}
+        <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button>
       </div>
     </form>
   );
