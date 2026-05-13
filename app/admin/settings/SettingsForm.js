@@ -175,10 +175,10 @@ export default function SettingsForm({ initialSettings }) {
         </div>
       </div>
 
-      {/* Brand Work */}
+      {/* High End Brands */}
       <ImageUploadBlock
-        title="Brand Work"
-        description="Campaign shots, product placements, brand collaborations — clicking 'Brand Work' in the tab bar opens these as a lightbox."
+        title="High End Brands"
+        description="Campaign shots, product placements, high end brand collaborations — clicking 'High End Brands' in the tab bar opens these as a lightbox."
         images={form.brand_images}
         uploading={brandUploading}
         inputRef={brandInputRef}

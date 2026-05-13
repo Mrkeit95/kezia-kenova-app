@@ -231,7 +231,7 @@ export default function HomePage({ products, settings, looks, sections }) {
                   <button className="section-tab" onClick={() => setShowAbout(true)}>About Me</button>
                 )}
                 {hasBrands && (
-                  <button className="section-tab" onClick={() => setShowBrands(true)}>Brand Work</button>
+                  <button className="section-tab" onClick={() => setShowBrands(true)}>High End Brands</button>
                 )}
                 {hasLocalBrands && (
                   <button className="section-tab" onClick={() => setShowLocalBrands(true)}>Local Brands</button>
@@ -324,7 +324,7 @@ export default function HomePage({ products, settings, looks, sections }) {
       </InfoModal>
 
       {/* Brand Work lightbox */}
-      <GalleryModal title="Brand Work" images={s.brand_images} open={showBrands} onClose={() => setShowBrands(false)} />
+      <GalleryModal title="High End Brands" images={s.brand_images} open={showBrands} onClose={() => setShowBrands(false)} />
 
       {/* Local Brands lightbox */}
       <GalleryModal title="Local Brands" images={s.local_brand_images} open={showLocalBrands} onClose={() => setShowLocalBrands(false)} />
