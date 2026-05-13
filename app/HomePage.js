@@ -89,8 +89,6 @@ export default function HomePage({ products, settings, looks, sections }) {
     return () => observer.disconnect();
   }, []);
 
-  const bestSellers = list.filter((p) => p.featured);
-
   // Build a product map for quick lookup by id
   const productMap = list.reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
@@ -171,18 +169,6 @@ export default function HomePage({ products, settings, looks, sections }) {
             )}
           </nav>
 
-          {bestSellers.length > 0 && (
-            <section id="best-sellers" className="section reveal reveal-up">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">Best Sellers</h2>
-                <div className="line"></div>
-              </div>
-              <p className="section-sub">the ones you keep asking me about</p>
-              <ProductCarousel products={bestSellers} onProductClick={setModalProduct} />
-            </section>
-          )}
-
           {looks && looks.length > 0 && (
             <section id="looks" className="section reveal reveal-left">
               <div className="section-head">
@@ -248,8 +234,6 @@ export default function HomePage({ products, settings, looks, sections }) {
             );
           })}
 
-          <NewsletterForm />
-
           <footer className="footer reveal reveal-up">
             <div className="rule"></div>
             <div className="footer-links">
@@ -314,62 +298,4 @@ function ArrowIcon() {
   );
 }
 
-function NewsletterForm() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setStatus("success");
-        setEmail("");
-      } else {
-        setStatus("error");
-      }
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  return (
-    <section className="newsletter reveal reveal-up">
-      <div className="section-head">
-        <div className="line"></div>
-        <h2 className="section-title">Stay in Touch</h2>
-        <div className="line"></div>
-      </div>
-      <p className="section-sub">new drops, my favourites, the occasional postcard</p>
-      {status === "success" ? (
-        <div className="newsletter-success">
-          <span>✓</span>
-          <p>You're on the list. See you soon.</p>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="newsletter-form">
-          <input
-            type="email"
-            placeholder="your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={status === "loading"}
-          />
-          <button type="submit" disabled={status === "loading"}>
-            {status === "loading" ? "..." : "Subscribe"}
-          </button>
-        </form>
-      )}
-      {status === "error" && (
-        <p className="newsletter-error">Something went wrong. Try again?</p>
-      )}
-    </section>
-  );
-}

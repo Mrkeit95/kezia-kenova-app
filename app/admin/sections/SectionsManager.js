@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 
@@ -13,8 +13,10 @@ function slugify(text) {
 }
 
 export default function SectionsManager({ initialSections, allProducts }) {
-  const [sections, setSections] = useState(initialSections);
+  const sorted = [...initialSections].sort((a, b) => a.sort_order - b.sort_order);
+  const [sections, setSections] = useState(sorted);
   const [editing, setEditing] = useState(null);
+  const [reordering, setReordering] = useState(false);
   const router = useRouter();
 
   const handleSave = async (section) => {
@@ -59,7 +61,29 @@ export default function SectionsManager({ initialSections, allProducts }) {
     router.refresh();
   };
 
-  // Build a map of product id -> product for quick lookup
+  // Move a section up or down in the list
+  const move = (index, direction) => {
+    const next = [...sections];
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= next.length) return;
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    // Re-assign sort_order based on new position
+    const reordered = next.map((s, i) => ({ ...s, sort_order: i }));
+    setSections(reordered);
+  };
+
+  // Save the new order to Supabase
+  const saveOrder = async () => {
+    setReordering(true);
+    const supabase = createClient();
+    const updates = sections.map((s) =>
+      supabase.from("sections").update({ sort_order: s.sort_order }).eq("id", s.id)
+    );
+    await Promise.all(updates);
+    setReordering(false);
+    router.refresh();
+  };
+
   const productMap = allProducts.reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
   return (
@@ -71,6 +95,9 @@ export default function SectionsManager({ initialSections, allProducts }) {
             <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
               {sections.filter((s) => s.visible).length} visible · {sections.length} total
             </span>
+            <button onClick={saveOrder} className="btn-ghost" disabled={reordering}>
+              {reordering ? "Saving…" : "Save Order"}
+            </button>
             <button onClick={() => setEditing("new")} className="btn-primary">
               + New Section
             </button>
@@ -78,7 +105,7 @@ export default function SectionsManager({ initialSections, allProducts }) {
         </div>
 
         <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 20, letterSpacing: "0.02em", lineHeight: 1.6 }}>
-          Each section appears as a product carousel on your homepage. Create as many as you like — Jewellery, Skincare, Travel Essentials, anything.
+          Use the ↑ ↓ arrows to reorder sections, then hit "Save Order" to apply on the site.
         </p>
 
         {sections.length === 0 ? (
@@ -87,13 +114,26 @@ export default function SectionsManager({ initialSections, allProducts }) {
           </div>
         ) : (
           <div className="product-list">
-            {[...sections].sort((a, b) => a.sort_order - b.sort_order).map((s) => {
+            {sections.map((s, index) => {
               const preview = (s.product_ids || []).slice(0, 3).map((id) => productMap[id]).filter(Boolean);
               return (
                 <div key={s.id} className="section-row">
-                  <div className="section-row-order">
-                    <span>{s.sort_order}</span>
+                  {/* Reorder arrows */}
+                  <div className="section-reorder-btns">
+                    <button
+                      onClick={() => move(index, -1)}
+                      disabled={index === 0}
+                      className="section-reorder-btn"
+                      title="Move up"
+                    >↑</button>
+                    <button
+                      onClick={() => move(index, 1)}
+                      disabled={index === sections.length - 1}
+                      className="section-reorder-btn"
+                      title="Move down"
+                    >↓</button>
                   </div>
+
                   <div className="section-row-info">
                     <div className="section-row-title">
                       {s.title}
@@ -120,11 +160,11 @@ export default function SectionsManager({ initialSections, allProducts }) {
                       </div>
                     )}
                   </div>
+
                   <div className="product-row-actions">
                     <button
                       onClick={() => toggleVisible(s)}
                       className={s.visible ? "btn-primary" : "btn-ghost"}
-                      title={s.visible ? "Hide section" : "Show section"}
                     >
                       {s.visible ? "Live" : "Hidden"}
                     </button>
