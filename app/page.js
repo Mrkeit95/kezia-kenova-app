@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase-server";
 import HomePage from "./HomePage";
 
+
 export default async function Page() {
   const supabase = createClient();
 
@@ -12,13 +13,19 @@ export default async function Page() {
     supabase.from("videos").select("*").eq("visible", true).order("sort_order", { ascending: true }),
   ]);
 
+  const settings = settingsRes.data || {};
+  const layout = Array.isArray(settings.homepage_layout) && settings.homepage_layout.length > 0
+    ? settings.homepage_layout
+    : null;
+
   return (
     <HomePage
       products={productsRes.data || []}
-      settings={settingsRes.data || {}}
+      settings={settings}
       looks={looksRes.data || []}
       sections={sectionsRes.data || []}
       videos={videosRes.data || []}
+      layout={layout}
     />
   );
 }

@@ -119,7 +119,7 @@ function GalleryModal({ title, images, open, onClose }) {
   );
 }
 
-export default function HomePage({ products, settings, looks, sections, videos }) {
+export default function HomePage({ products, settings, looks, sections, videos, layout }) {
   const s = { ...DEFAULTS, ...settings };
   const list = products;
 
@@ -174,6 +174,26 @@ export default function HomePage({ products, settings, looks, sections, videos }
   const hasTikTok = tiktokVideos.length > 0;
   const hasInstagram = instagramVideos.length > 0;
   const showTabs = hasAbout || hasBrands || hasLocalBrands || hasTikTok || hasInstagram || hasLooks || visibleSections.length > 0;
+
+  // Build ordered list of section block IDs
+  const defaultOrder = [
+    ...(hasAbout ? ["about"] : []),
+    ...(hasBrands ? ["brands"] : []),
+    ...(hasLocalBrands ? ["local_brands"] : []),
+    ...(hasLooks ? ["looks"] : []),
+    ...visibleSections.map((sec) => `section_${sec.slug}`),
+    ...(hasTikTok ? ["tiktok"] : []),
+    ...(hasInstagram ? ["instagram"] : []),
+  ];
+
+  const activeLayout = layout
+    ? layout.filter((id) => defaultOrder.includes(id))
+    : defaultOrder;
+  // append any new blocks not yet in saved layout
+  const finalOrder = [
+    ...activeLayout,
+    ...defaultOrder.filter((id) => !activeLayout.includes(id)),
+  ];
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -260,28 +280,20 @@ export default function HomePage({ products, settings, looks, sections, videos }
             </div>
           )}
 
-          {/* TikTok Videos */}
-          {hasTikTok && (
-            <section id="tiktok" className="section reveal reveal-up">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">TikTok</h2>
-                <div className="line"></div>
-              </div>
-              <p className="section-sub">watch · shop the yellow card</p>
-              <div className="video-cards-wrap">
-                <div className="video-cards">
+                    {/* All sections rendered in layout order */}
+          {finalOrder.map((blockId, idx) => {
+
+            if (blockId === "tiktok" && hasTikTok) return (
+              <section key="tiktok" id="tiktok" className="section reveal reveal-up">
+                <div className="section-head"><div className="line"></div><h2 className="section-title">TikTok</h2><div className="line"></div></div>
+                <p className="section-sub">watch · shop the yellow card</p>
+                <div className="video-cards-wrap"><div className="video-cards">
                   {tiktokVideos.map((v) => (
                     <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
                       <div className="video-card-thumb">
-                        {v.thumbnail_url && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={v.thumbnail_url} alt={v.caption || "TikTok"} className="video-card-thumb-img" />
-                        )}
+                        {v.thumbnail_url && <img src={v.thumbnail_url} alt={v.caption || "TikTok"} className="video-card-thumb-img" />}
                         <div className="video-card-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-                        <div className="video-card-platform tiktok">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
-                        </div>
+                        <div className="video-card-platform tiktok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg></div>
                       </div>
                       <div className="video-card-body">
                         <p className="video-card-caption">{v.caption || "Watch on TikTok"}</p>
@@ -289,33 +301,21 @@ export default function HomePage({ products, settings, looks, sections, videos }
                       </div>
                     </button>
                   ))}
-                </div>
-              </div>
-            </section>
-          )}
+                </div></div>
+              </section>
+            );
 
-          {/* Instagram Videos */}
-          {hasInstagram && (
-            <section id="instagram" className="section reveal reveal-up">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">Instagram</h2>
-                <div className="line"></div>
-              </div>
-              <p className="section-sub">reels &amp; moments</p>
-              <div className="video-cards-wrap">
-                <div className="video-cards">
+            if (blockId === "instagram" && hasInstagram) return (
+              <section key="instagram" id="instagram" className="section reveal reveal-up">
+                <div className="section-head"><div className="line"></div><h2 className="section-title">Instagram</h2><div className="line"></div></div>
+                <p className="section-sub">reels &amp; moments</p>
+                <div className="video-cards-wrap"><div className="video-cards">
                   {instagramVideos.map((v) => (
                     <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
                       <div className="video-card-thumb">
-                        {v.thumbnail_url && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={v.thumbnail_url} alt={v.caption || "Instagram"} className="video-card-thumb-img" />
-                        )}
+                        {v.thumbnail_url && <img src={v.thumbnail_url} alt={v.caption || "Instagram"} className="video-card-thumb-img" />}
                         <div className="video-card-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-                        <div className="video-card-platform instagram">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
-                        </div>
+                        <div className="video-card-platform instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg></div>
                       </div>
                       <div className="video-card-body">
                         <p className="video-card-caption">{v.caption || "Watch on Instagram"}</p>
@@ -323,61 +323,47 @@ export default function HomePage({ products, settings, looks, sections, videos }
                       </div>
                     </button>
                   ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Get the Look */}
-          {hasLooks && (
-            <section id="looks" className="section reveal reveal-left">
-              <div className="section-head">
-                <div className="line"></div>
-                <h2 className="section-title">Get the Look</h2>
-                <div className="line"></div>
-              </div>
-              <p className="section-sub">full outfits, head to toe</p>
-              <div className="looks-grid">
-                {looks.slice(0, 4).map((look) => (
-                  <Link key={look.id} href={`/looks/${look.id}`} className="look-card">
-                    <div className="look-img">
-                      {look.cover_image && <img src={look.cover_image} alt={look.title} loading="lazy" />}
-                    </div>
-                    <div className="look-body">
-                      <div className="look-title">{look.title}</div>
-                      <div className="look-shop">Shop the look ›</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              {looks.length > 4 && (
-                <div className="view-all-wrap">
-                  <Link href="/looks" className="view-all">View all looks ›</Link>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Product sections */}
-          {visibleSections.map((sec, idx) => {
-            const sectionProducts = (sec.product_ids || []).map((id) => productMap[id]).filter(Boolean).slice(0, 8);
-            const revealClass = idx % 2 === 0 ? "reveal-up" : "reveal-right";
-            return (
-              <section key={sec.id} id={`section-${sec.slug}`} className={`section reveal ${revealClass}`}>
-                <div className="section-head">
-                  <div className="line"></div>
-                  <h2 className="section-title">{sec.title}</h2>
-                  <div className="line"></div>
-                </div>
-                {sec.subtitle && <p className="section-sub">{sec.subtitle}</p>}
-                <ProductCarousel products={sectionProducts} onProductClick={setModalProduct} />
-                <div className="view-all-wrap">
-                  <Link href={`/category/${sec.slug}`} onClick={saveScrollForCategory} className="view-all">
-                    View all {(sec.product_ids || []).length} {sec.title.toLowerCase()} ›
-                  </Link>
-                </div>
+                </div></div>
               </section>
             );
+
+            if (blockId === "looks" && hasLooks) return (
+              <section key="looks" id="looks" className="section reveal reveal-left">
+                <div className="section-head"><div className="line"></div><h2 className="section-title">Get the Look</h2><div className="line"></div></div>
+                <p className="section-sub">full outfits, head to toe</p>
+                <div className="looks-grid">
+                  {looks.slice(0, 4).map((look) => (
+                    <Link key={look.id} href={`/looks/${look.id}`} className="look-card">
+                      <div className="look-img">{look.cover_image && <img src={look.cover_image} alt={look.title} loading="lazy" />}</div>
+                      <div className="look-body"><div className="look-title">{look.title}</div><div className="look-shop">Shop the look ›</div></div>
+                    </Link>
+                  ))}
+                </div>
+                {looks.length > 4 && <div className="view-all-wrap"><Link href="/looks" className="view-all">View all looks ›</Link></div>}
+              </section>
+            );
+
+            if (blockId.startsWith("section_")) {
+              const slug = blockId.replace("section_", "");
+              const sec = visibleSections.find((s) => s.slug === slug);
+              if (!sec) return null;
+              const sectionProducts = (sec.product_ids || []).map((id) => productMap[id]).filter(Boolean).slice(0, 8);
+              if (!sectionProducts.length) return null;
+              return (
+                <section key={sec.id} id={`section-${sec.slug}`} className="section reveal reveal-up">
+                  <div className="section-head"><div className="line"></div><h2 className="section-title">{sec.title}</h2><div className="line"></div></div>
+                  {sec.subtitle && <p className="section-sub">{sec.subtitle}</p>}
+                  <ProductCarousel products={sectionProducts} onProductClick={setModalProduct} />
+                  <div className="view-all-wrap">
+                    <Link href={`/category/${sec.slug}`} onClick={saveScrollForCategory} className="view-all">
+                      View all {(sec.product_ids || []).length} {sec.title.toLowerCase()} ›
+                    </Link>
+                  </div>
+                </section>
+              );
+            }
+
+            return null;
           })}
 
           <footer className="footer reveal reveal-up">

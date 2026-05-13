@@ -8,8 +8,9 @@ function extractTikTokId(url) {
 }
 
 function extractInstagramId(url) {
-  const clean = url.split("?")[0].replace(/\/+$/, "");
-  const m = clean.match(/\/(reel|p|tv)\/([A-Za-z0-9_-]+)/);
+  if (!url) return null;
+  const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
+  const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
   return m ? m[2] : null;
 }
 
@@ -30,7 +31,7 @@ export default function VideoModal({ video, onClose }) {
   const embedUrl = isTikTok && tikTokId
     ? `https://www.tiktok.com/embed/v2/${tikTokId}`
     : isInstagram && instagramId
-    ? `https://www.instagram.com/p/${instagramId}/embed/`
+    ? `https://www.instagram.com/reel/${instagramId}/embed/`
     : null;
 
   const shopLabel = isTikTok ? "Watch & Shop on TikTok ↗" : "Open on Instagram ↗";

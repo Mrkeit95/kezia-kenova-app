@@ -1,42 +1,47 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 
 function extractTikTokId(url) {
-  // handles: /video/123, /@user/video/123, vm.tiktok.com/xxx, etc.
+  if (!url) return null;
   const m = url.match(/video\/(\d+)/);
   return m ? m[1] : null;
 }
 
 function extractInstagramId(url) {
-  // strip query strings and trailing slashes first
-  const clean = url.split("?")[0].replace(/\/+$/, "");
-  const m = clean.match(/\/(reel|p|tv)\/([A-Za-z0-9_-]+)/);
+  if (!url) return null;
+  const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
+  const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
   return m ? m[2] : null;
 }
 
+function isValidUrl(platform, url) {
+  if (!url) return false;
+  if (platform === "tiktok") return !!extractTikTokId(url);
+  // For instagram, just check it contains instagram.com and has /reel/ or /p/ or /reels/
+  return url.includes("instagram.com") && !!extractInstagramId(url);
+}
+
 function VideoPreview({ platform, url }) {
-  const isValid = platform === "tiktok" ? !!extractTikTokId(url) : !!extractInstagramId(url);
+  const valid = isValidUrl(platform, url);
   return (
     <div style={{
       fontSize: 10, letterSpacing: "0.1em",
-      color: isValid ? "rgba(212,165,116,0.7)" : "rgba(201,122,106,0.7)",
+      color: valid ? "rgba(212,165,116,0.7)" : "rgba(201,122,106,0.7)",
       marginTop: 4
     }}>
-      {url
-        ? isValid
-          ? `✓ Valid ${platform === "tiktok" ? "TikTok" : "Instagram"} URL`
-          : `✗ Couldn't detect video ID — paste the full URL e.g. instagram.com/reel/ABC123/`
-        : ""}
+      {url ? (valid ? `✓ Valid URL` : `✗ Couldn't detect video — make sure it's a full URL like instagram.com/reels/ABC123/`) : ""}
     </div>
   );
 }
 
 export default function VideosManager({ initialVideos }) {
-  const [videos, setVideos] = useState(initialVideos);
+  const sorted = [...initialVideos].sort((a, b) => a.sort_order - b.sort_order);
+  const [videos, setVideos] = useState(sorted);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   const tiktoks = videos.filter((v) => v.platform === "tiktok").sort((a, b) => a.sort_order - b.sort_order);
@@ -50,6 +55,7 @@ export default function VideosManager({ initialVideos }) {
       caption: video.caption || "",
       visible: video.visible,
       sort_order: video.sort_order ?? 0,
+      thumbnail_url: video.thumbnail_url || "",
     };
     if (video.id) {
       const { error } = await supabase.from("videos").update(payload).eq("id", video.id);
@@ -82,17 +88,37 @@ export default function VideosManager({ initialVideos }) {
     router.refresh();
   };
 
-  const renderGroup = (list, platform, label, icon) => (
+  const move = (platform, index, direction) => {
+    const group = platform === "tiktok" ? [...tiktoks] : [...instagrams];
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= group.length) return;
+    [group[index], group[swapIndex]] = [group[swapIndex], group[index]];
+    const reordered = group.map((v, i) => ({ ...v, sort_order: i }));
+    const otherPlatform = platform === "tiktok" ? instagrams : tiktoks;
+    setVideos([...otherPlatform, ...reordered]);
+  };
+
+  const saveOrder = async (platform) => {
+    setSaving(true);
+    const supabase = createClient();
+    const group = platform === "tiktok" ? tiktoks : instagrams;
+    await Promise.all(group.map((v) => supabase.from("videos").update({ sort_order: v.sort_order }).eq("id", v.id)));
+    setSaving(false);
+    router.refresh();
+  };
+
+  const renderGroup = (list, platform, label) => (
     <div className="admin-section" style={{ marginBottom: 28 }}>
       <div className="admin-section-head">
-        <h2 className="admin-section-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 20 }}>{icon}</span> {label}
-        </h2>
+        <h2 className="admin-section-title">{label}</h2>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <span style={{ fontSize: 11, color: "rgba(232,223,210,0.5)", letterSpacing: "0.1em" }}>
             {list.filter((v) => v.visible).length} visible · {list.length} total
           </span>
-          <button onClick={() => setEditing({ platform, url: "", caption: "", visible: true, sort_order: list.length })} className="btn-primary">
+          <button onClick={() => saveOrder(platform)} className="btn-ghost" disabled={saving}>
+            {saving ? "Saving…" : "Save Order"}
+          </button>
+          <button onClick={() => setEditing({ platform, url: "", caption: "", visible: true, sort_order: list.length, thumbnail_url: "" })} className="btn-primary">
             + Add Video
           </button>
         </div>
@@ -100,64 +126,57 @@ export default function VideosManager({ initialVideos }) {
 
       <p style={{ fontSize: 12, color: "rgba(232,223,210,0.4)", fontStyle: "italic", marginBottom: 16, lineHeight: 1.6 }}>
         {platform === "tiktok"
-          ? "Paste the full URL of a TikTok video. Visitors can watch it on-site then tap through to buy via the TikTok affiliate yellow card."
-          : "Paste the full URL of an Instagram Reel or post. Visitors can watch it on-site then open it on Instagram."}
+          ? "Paste the full TikTok video URL. Thumbnail is fetched automatically."
+          : "Paste the full Instagram Reel URL e.g. https://www.instagram.com/reels/ABC123/ — thumbnail uploads from your phone."}
       </p>
 
       {list.length === 0 ? (
         <div className="empty-state">No {label} videos yet. Click "+ Add Video" to add one.</div>
       ) : (
         <div className="product-list">
-          {list.map((v) => {
-            const videoId = platform === "tiktok" ? extractTikTokId(v.url) : extractInstagramId(v.url);
-            return (
-              <div key={v.id} className="video-row">
-                <div className="video-row-thumb">
-                  {v.thumbnail_url ? (
-                    <div className="video-row-thumbnail">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={v.thumbnail_url} alt="" />
-                      <div className={`video-row-platform-dot ${platform}`}>
-                        {platform === "tiktok" ? (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
-                        )}
-                      </div>
+          {list.map((v, index) => (
+            <div key={v.id} className="video-row">
+              {/* Reorder */}
+              <div className="section-reorder-btns">
+                <button onClick={() => move(platform, index, -1)} disabled={index === 0} className="section-reorder-btn">↑</button>
+                <button onClick={() => move(platform, index, 1)} disabled={index === list.length - 1} className="section-reorder-btn">↓</button>
+              </div>
+              {/* Thumbnail */}
+              <div className="video-row-thumb">
+                {v.thumbnail_url ? (
+                  <div className="video-row-thumbnail">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={v.thumbnail_url} alt="" />
+                    <div className={`video-row-platform-dot ${platform}`}>
+                      {platform === "tiktok"
+                        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                        : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>}
                     </div>
-                  ) : (
-                    <div className={`video-platform-badge ${videoId ? platform : "error"}`}>
-                      {videoId ? (
-                        platform === "tiktok" ? (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
-                        )
-                      ) : "?"}
-                    </div>
-                  )}
-                </div>
-                <div className="product-row-info">
-                  <div className="product-row-title">
-                    {v.caption || <span style={{ opacity: 0.4, fontStyle: "italic" }}>No caption</span>}
-                    {!v.visible && <span className="section-hidden-badge" style={{ marginLeft: 8 }}>Hidden</span>}
                   </div>
-                  <div className="product-row-meta">
-                    <span style={{ color: "rgba(212,165,116,0.6)", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {v.url}
-                    </span>
+                ) : (
+                  <div className={`video-platform-badge ${platform}`}>
+                    {platform === "tiktok"
+                      ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                      : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>}
                   </div>
+                )}
+              </div>
+              <div className="product-row-info">
+                <div className="product-row-title">
+                  {v.caption || <span style={{ opacity: 0.4, fontStyle: "italic" }}>No caption</span>}
+                  {!v.visible && <span className="section-hidden-badge" style={{ marginLeft: 8 }}>Hidden</span>}
                 </div>
-                <div className="product-row-actions">
-                  <button onClick={() => toggleVisible(v)} className={v.visible ? "btn-primary" : "btn-ghost"}>
-                    {v.visible ? "Live" : "Hidden"}
-                  </button>
-                  <button onClick={() => setEditing(v)} className="btn-ghost">Edit</button>
-                  <button onClick={() => handleDelete(v.id)} className="btn-danger">Delete</button>
+                <div className="product-row-meta">
+                  <span style={{ color: "rgba(212,165,116,0.6)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.url}</span>
                 </div>
               </div>
-            );
-          })}
+              <div className="product-row-actions">
+                <button onClick={() => toggleVisible(v)} className={v.visible ? "btn-primary" : "btn-ghost"}>{v.visible ? "Live" : "Hidden"}</button>
+                <button onClick={() => setEditing(v)} className="btn-ghost">Edit</button>
+                <button onClick={() => handleDelete(v.id)} className="btn-danger">Delete</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -165,16 +184,9 @@ export default function VideosManager({ initialVideos }) {
 
   return (
     <>
-      {renderGroup(tiktoks, "tiktok", "TikTok Videos", "♪")}
-      {renderGroup(instagrams, "instagram", "Instagram Videos", "◈")}
-
-      {editing && (
-        <VideoForm
-          video={editing}
-          onSave={handleSave}
-          onCancel={() => setEditing(null)}
-        />
-      )}
+      {renderGroup(tiktoks, "tiktok", "TikTok Videos")}
+      {renderGroup(instagrams, "instagram", "Instagram Videos")}
+      {editing && <VideoForm video={editing} onSave={handleSave} onCancel={() => setEditing(null)} />}
     </>
   );
 }
@@ -183,7 +195,30 @@ function VideoForm({ video, onSave, onCancel }) {
   const [form, setForm] = useState({ ...video });
   const [saving, setSaving] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
+  const [fetchingThumb, setFetchingThumb] = useState(false);
   const thumbInputRef = useRef(null);
+
+  // Auto-fetch thumbnail when URL is valid
+  useEffect(() => {
+    const url = form.url?.trim();
+    if (!url || form.thumbnail_url) return;
+    const valid = isValidUrl(form.platform, url);
+    if (!valid) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setFetchingThumb(true);
+      try {
+        const res = await fetch(`/api/oembed?url=${encodeURIComponent(url)}&platform=${form.platform}`);
+        const data = await res.json();
+        if (!cancelled && data.thumbnail_url) {
+          setForm((prev) => ({ ...prev, thumbnail_url: data.thumbnail_url }));
+        }
+      } catch {}
+      if (!cancelled) setFetchingThumb(false);
+    }, 800);
+    return () => { cancelled = true; clearTimeout(timer); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.url]);
 
   const handleThumbUpload = async (file) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -216,40 +251,43 @@ function VideoForm({ video, onSave, onCancel }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{video.id ? "Edit Video" : `Add ${form.platform === "tiktok" ? "TikTok" : "Instagram"} Video`}</h2>
         <form onSubmit={handleSubmit} className="form-grid">
-
           <div className="form-field">
             <label>Video URL</label>
             <input
               type="url"
               value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
+              onChange={(e) => setForm({ ...form, url: e.target.value, thumbnail_url: "" })}
               placeholder={form.platform === "tiktok"
                 ? "https://www.tiktok.com/@username/video/1234567890"
-                : "https://www.instagram.com/reel/ABC123/"}
+                : "https://www.instagram.com/reels/DLUMqg-yovr/"}
               required
             />
             <VideoPreview platform={form.platform} url={form.url} />
-            <p style={{ fontSize: 10, color: "rgba(232,223,210,0.35)", marginTop: 8, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 10, color: "rgba(232,223,210,0.35)", marginTop: 6, lineHeight: 1.6 }}>
               {form.platform === "tiktok"
-                ? "Copy the URL from the TikTok app — tap Share → Copy Link, or use the browser URL."
-                : "Copy the URL from the Instagram app — tap ··· → Copy Link, or use the browser URL."}
+                ? "Tap Share → Copy Link in TikTok. Thumbnail fetched automatically."
+                : "Tap ··· → Copy Link in Instagram. Upload a screenshot as thumbnail below."}
             </p>
           </div>
 
-          {/* Thumbnail upload */}
+          {/* Thumbnail */}
           <div className="form-field">
-            <label>Thumbnail <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0 }}>— screenshot from your video</span></label>
+            <label>
+              Thumbnail
+              {fetchingThumb && <span style={{ opacity: 0.5, fontStyle: "italic", textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>fetching…</span>}
+              {!fetchingThumb && form.platform === "instagram" && <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>— upload a screenshot from your phone</span>}
+            </label>
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-              {form.thumbnail_url ? (
+              {form.thumbnail_url && (
                 <div style={{ position: "relative", flexShrink: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.thumbnail_url} alt="Thumbnail" style={{ width: 80, height: 120, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(232,223,210,0.15)" }} />
-                  <button type="button" onClick={() => setForm({ ...form, thumbnail_url: "" })} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>×</button>
+                  <img src={form.thumbnail_url} alt="Thumbnail" style={{ width: 72, height: 108, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(232,223,210,0.15)" }} />
+                  <button type="button" onClick={() => setForm({ ...form, thumbnail_url: "" })} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, background: "rgba(0,0,0,0.75)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: 1 }}>×</button>
                 </div>
-              ) : null}
+              )}
               <div
                 className="brand-upload-area"
-                style={{ flex: 1, padding: "20px 16px", marginBottom: 0 }}
+                style={{ flex: 1, padding: "18px 14px", marginBottom: 0 }}
                 onClick={() => thumbInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); handleThumbUpload(e.dataTransfer.files[0]); }}
@@ -257,7 +295,7 @@ function VideoForm({ video, onSave, onCancel }) {
                 {thumbUploading ? <span>Uploading…</span> : (
                   <span style={{ fontSize: 11 }}>
                     {form.thumbnail_url ? "Replace thumbnail" : "Upload thumbnail"}<br />
-                    <span style={{ fontSize: 10, opacity: 0.5 }}>Screenshot the video on your phone → upload here</span>
+                    <span style={{ fontSize: 10, opacity: 0.5 }}>From phone or computer · screenshot works great</span>
                   </span>
                 )}
                 <input ref={thumbInputRef} type="file" accept="image/*" onChange={(e) => handleThumbUpload(e.target.files[0])} style={{ display: "none" }} />
@@ -267,30 +305,17 @@ function VideoForm({ video, onSave, onCancel }) {
 
           <div className="form-field">
             <label>Caption <span style={{ opacity: 0.5, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
-            <input
-              type="text"
-              value={form.caption || ""}
-              onChange={(e) => setForm({ ...form, caption: e.target.value })}
-              placeholder="What's this video about?"
-            />
+            <input type="text" value={form.caption || ""} onChange={(e) => setForm({ ...form, caption: e.target.value })} placeholder="What's this video about?" />
           </div>
 
           <div className="form-row-2">
             <div className="form-field">
               <label>Sort Order</label>
-              <input
-                type="number"
-                value={form.sort_order ?? 0}
-                onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-              />
+              <input type="number" value={form.sort_order ?? 0} onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} />
             </div>
             <div className="form-field" style={{ justifyContent: "flex-end" }}>
               <label className="checkbox-label" style={{ marginTop: 22 }}>
-                <input
-                  type="checkbox"
-                  checked={form.visible}
-                  onChange={(e) => setForm({ ...form, visible: e.target.checked })}
-                />
+                <input type="checkbox" checked={form.visible} onChange={(e) => setForm({ ...form, visible: e.target.checked })} />
                 <span>Visible on site</span>
               </label>
             </div>
@@ -298,9 +323,7 @@ function VideoForm({ video, onSave, onCancel }) {
 
           <div className="modal-actions">
             <button type="button" onClick={onCancel} className="btn-ghost">Cancel</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? "Saving…" : "Save Video"}
-            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Save Video"}</button>
           </div>
         </form>
       </div>

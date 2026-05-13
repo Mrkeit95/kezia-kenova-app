@@ -23,6 +23,7 @@ export default function AdminNav() {
     { href: "/admin/sections", label: "Sections" },
     { href: "/admin/looks", label: "Looks" },
     { href: "/admin/videos", label: "Videos" },
+    { href: "/admin/layout", label: "Layout" },
     { href: "/admin/subscribers", label: "Subscribers" },
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/settings", label: "Settings" },
