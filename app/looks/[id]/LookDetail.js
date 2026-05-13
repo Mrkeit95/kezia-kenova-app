@@ -75,7 +75,7 @@ export default function LookDetail({ look, products }) {
 
           <footer className="footer" style={{ marginTop: 60 }}>
             <div className="rule"></div>
-            <p>© {new Date().getFullYear()} Kezia Kenova</p>
+            <p>© {new Date().getFullYear()} Kezia Ken</p>
           </footer>
         </div>
       </main>

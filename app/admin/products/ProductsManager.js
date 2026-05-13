@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-client";
 
-const CATEGORIES = ["Jewellery", "Makeup", "Fashion", "Skincare"];
+const CATEGORIES = ["Jewellery", "Makeup", "Skincare"];
 
 export default function ProductsManager({ initialProducts }) {
   const [products, setProducts] = useState(initialProducts);
@@ -92,56 +92,64 @@ export default function ProductsManager({ initialProducts }) {
             No products yet. Click "Add Product" to get started.
           </div>
         ) : (
-          CATEGORIES.map((cat) =>
-            grouped[cat] ? (
-              <div key={cat} style={{ marginBottom: 32 }}>
-                <h3
-                  style={{
-                    fontFamily: "Cormorant Garamond, serif",
-                    fontSize: 18,
-                    color: "#d4a574",
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    marginBottom: 14,
-                  }}
-                >
-                  {cat}
-                </h3>
-                <div className="product-list">
-                  {grouped[cat].map((p) => (
-                    <div key={p.id} className="product-row">
-                      <div className="product-row-img">
-                        {p.image_url && <img src={p.image_url} alt="" />}
-                      </div>
-                      <div className="product-row-info">
-                        <div className="product-row-title">
-                          {p.title}
-                          {p.featured && <span className="featured-badge">★ Best Seller</span>}
+          (() => {
+            // Show known categories first, then any custom ones
+            const allCats = [...new Set(products.map((p) => p.category))];
+            const ordered = [
+              ...CATEGORIES.filter((c) => allCats.includes(c)),
+              ...allCats.filter((c) => !CATEGORIES.includes(c)),
+            ];
+            return ordered.map((cat) =>
+              grouped[cat] ? (
+                <div key={cat} style={{ marginBottom: 32 }}>
+                  <h3
+                    style={{
+                      fontFamily: "Cormorant Garamond, serif",
+                      fontSize: 18,
+                      color: "#d4a574",
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      marginBottom: 14,
+                    }}
+                  >
+                    {cat}
+                  </h3>
+                  <div className="product-list">
+                    {grouped[cat].map((p) => (
+                      <div key={p.id} className="product-row">
+                        <div className="product-row-img">
+                          {p.image_url && <img src={p.image_url} alt="" />}
                         </div>
-                        <div className="product-row-meta">
-                          <span>{p.brand}</span>
-                          {p.price && <span style={{ color: "#d4a574" }}>{p.price}</span>}
-                          <span className="tag">{p.category}</span>
-                          {!p.visible && <span style={{ color: "#c97a6a" }}>Hidden</span>}
+                        <div className="product-row-info">
+                          <div className="product-row-title">
+                            {p.title}
+                            {p.featured && <span className="featured-badge">★ Best Seller</span>}
+                          </div>
+                          <div className="product-row-meta">
+                            <span>{p.brand}</span>
+                            {p.price && <span style={{ color: "#d4a574" }}>{p.price}</span>}
+                            <span className="tag">{p.category}</span>
+                            {!p.visible && <span style={{ color: "#c97a6a" }}>Hidden</span>}
+                          </div>
+                        </div>
+                        <div className="product-row-actions">
+                          <button
+                            onClick={() => toggleFeatured(p)}
+                            className={p.featured ? "btn-primary" : "btn-ghost"}
+                            title={p.featured ? "Remove from Best Sellers" : "Add to Best Sellers"}
+                          >
+                            {p.featured ? "★" : "☆"}
+                          </button>
+                          <button onClick={() => setEditing(p)} className="btn-ghost">Edit</button>
+                          <button onClick={() => handleDelete(p.id)} className="btn-danger">Delete</button>
                         </div>
                       </div>
-                      <div className="product-row-actions">
-                        <button
-                          onClick={() => toggleFeatured(p)}
-                          className={p.featured ? "btn-primary" : "btn-ghost"}
-                          title={p.featured ? "Remove from Best Sellers" : "Add to Best Sellers"}
-                        >
-                          {p.featured ? "★" : "☆"}
-                        </button>
-                        <button onClick={() => setEditing(p)} className="btn-ghost">Edit</button>
-                        <button onClick={() => handleDelete(p.id)} className="btn-danger">Delete</button>
-                      </div>
-                    </div>
                   ))}
+                  </div>
                 </div>
-              </div>
-            ) : null
-          )
+              ) : null
+            );
+          })()
         )}
       </div>
 
@@ -313,14 +321,16 @@ function ProductForm({ product, onSave, onCancel }) {
           <div className="form-row-2">
             <div className="form-field">
               <label>Category</label>
-              <select
+              <input
+                type="text"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                placeholder="Jewellery, Makeup, Skincare…"
+                list="category-suggestions"
+              />
+              <datalist id="category-suggestions">
+                {CATEGORIES.map((c) => <option key={c} value={c} />)}
+              </datalist>
             </div>
 
             <div className="form-field">

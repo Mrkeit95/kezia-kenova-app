@@ -16,7 +16,7 @@ export default function LoadingScreen() {
     <div className="loading-screen">
       <div className="loading-logo">K</div>
       <div className="loading-bar"></div>
-      <div className="loading-name">Kezia Kenova</div>
+      <div className="loading-name">Kezia Ken</div>
     </div>
   );
 }

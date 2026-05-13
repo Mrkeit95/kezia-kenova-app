@@ -5,14 +5,13 @@ import Link from "next/link";
 export default async function DashboardPage() {
   const supabase = createClient();
 
-  const [productsRes, subsRes, clicksRes, weekClicksRes, recentSubsRes, topProductsRes, journalRes, looksRes] = await Promise.all([
+  const [productsRes, subsRes, clicksRes, weekClicksRes, recentSubsRes, topProductsRes, looksRes] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }),
     supabase.from("subscribers").select("id", { count: "exact", head: true }),
     supabase.from("clicks").select("id", { count: "exact", head: true }),
     supabase.from("clicks").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     supabase.from("subscribers").select("email, created_at").order("created_at", { ascending: false }).limit(5),
     supabase.from("clicks").select("product_id, products(title, brand, image_url)").gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase.from("journal_posts").select("id", { count: "exact", head: true }),
     supabase.from("looks").select("id", { count: "exact", head: true }),
   ]);
 
@@ -74,16 +73,15 @@ export default async function DashboardPage() {
               <div className="stat-meta">{clicksRes.count ?? 0} total</div>
             </Link>
 
-            <Link href="/admin/journal" className="stat-card stat-card-link">
+            <Link href="/admin/looks" className="stat-card stat-card-link">
               <div className="stat-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h12l4 4v12H4z" />
-                  <path d="M8 10h8M8 14h8M8 18h5" />
+                  <path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2zM4 20c0-4 3.6-7 8-7s8 3 8 7" />
                 </svg>
               </div>
-              <div className="stat-label">Journal</div>
-              <div className="stat-value">{journalRes.count ?? 0}</div>
-              <div className="stat-meta">posts published</div>
+              <div className="stat-label">Looks</div>
+              <div className="stat-value">{looksRes.count ?? 0}</div>
+              <div className="stat-meta">outfits live</div>
             </Link>
           </div>
 
@@ -147,10 +145,6 @@ export default async function DashboardPage() {
               <Link href="/admin/products" className="quick-action">
                 <span className="quick-action-icon">+</span>
                 <span className="quick-action-text">Add Product</span>
-              </Link>
-              <Link href="/admin/journal" className="quick-action">
-                <span className="quick-action-icon">✎</span>
-                <span className="quick-action-text">Write Post</span>
               </Link>
               <Link href="/admin/looks" className="quick-action">
                 <span className="quick-action-icon">◇</span>

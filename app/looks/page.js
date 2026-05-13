@@ -6,7 +6,7 @@ import "../globals.css";
 import "../home.css";
 import "./looks.css";
 
-export const metadata = { title: "Looks · Kezia Kenova" };
+export const metadata = { title: "Looks · Kezia Ken" };
 
 export default async function LooksIndex() {
   const supabase = createClient();
@@ -60,7 +60,7 @@ export default async function LooksIndex() {
 
           <footer className="footer" style={{ marginTop: 60 }}>
             <div className="rule"></div>
-            <p>© {new Date().getFullYear()} Kezia Kenova</p>
+            <p>© {new Date().getFullYear()} Kezia Ken</p>
           </footer>
         </div>
       </main>

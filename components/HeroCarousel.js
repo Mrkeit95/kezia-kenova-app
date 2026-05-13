@@ -44,37 +44,47 @@ export default function HeroCarousel({ images, fallback }) {
 
   if (list.length === 0) return null;
 
+  const activeSrc = list[current];
+
   return (
-    <div
-      className="hero-carousel"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div className="hero-carousel-track">
-        {list.map((src, i) => (
-          <div
-            key={i}
-            className={`hero-carousel-slide ${i === current ? "active" : ""}`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`Kezia Kenova ${i + 1}`} />
-          </div>
-        ))}
-        <div className="frame-glow"></div>
+    <div className="hero-wrap">
+      {/* Blurred background — same image, sits behind the carousel */}
+      <div className="hero-blur-bg" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={activeSrc} alt="" />
       </div>
 
-      {list.length > 1 && (
-        <div className="hero-carousel-dots">
-          {list.map((_, i) => (
-            <button
+      <div
+        className="hero-carousel"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className="hero-carousel-track">
+          {list.map((src, i) => (
+            <div
               key={i}
-              onClick={() => goTo(i)}
-              className={`hero-dot ${i === current ? "active" : ""}`}
-              aria-label={`Image ${i + 1}`}
-            />
+              className={`hero-carousel-slide ${i === current ? "active" : ""}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`Kezia Ken ${i + 1}`} />
+            </div>
           ))}
+          <div className="frame-glow"></div>
         </div>
-      )}
+
+        {list.length > 1 && (
+          <div className="hero-carousel-dots">
+            {list.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`hero-dot ${i === current ? "active" : ""}`}
+                aria-label={`Image ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

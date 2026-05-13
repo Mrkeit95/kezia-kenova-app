@@ -9,7 +9,7 @@ import "../../globals.css";
 import "../../home.css";
 import "./category.css";
 
-export default function CategoryPage({ category, subtitle, products }) {
+export default function CategoryPage({ category, subtitle, slug, products }) {
   const [modalProduct, setModalProduct] = useState(null);
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export default function CategoryPage({ category, subtitle, products }) {
     return () => observer.disconnect();
   }, [products]);
 
-  // Back link with hash to scroll to category section on homepage
-  const backHref = `/#category-${category.toLowerCase()}`;
+  // Back link with hash to scroll to section on homepage
+  const backHref = `/#section-${slug || category.toLowerCase()}`;
 
   return (
     <>
@@ -87,7 +87,7 @@ export default function CategoryPage({ category, subtitle, products }) {
 
           <footer className="footer" style={{ marginTop: 60 }}>
             <div className="rule"></div>
-            <p>© {new Date().getFullYear()} Kezia Kenova</p>
+            <p>© {new Date().getFullYear()} Kezia Ken</p>
           </footer>
         </div>
       </main>
