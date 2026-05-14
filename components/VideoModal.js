@@ -8,6 +8,13 @@ function extractTikTokId(url) {
   return m ? m[1] : null;
 }
 
+function extractInstagramId(url) {
+  if (!url) return null;
+  const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
+  const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
+  return m ? m[2] : null;
+}
+
 export default function VideoModal({ video, onClose }) {
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -64,33 +71,16 @@ export default function VideoModal({ video, onClose }) {
               />
             </div>
           ) : (
-            /* Instagram: thumbnail only — IG embeds always show profile pic/likes */
-            <a
-              href={video.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="video-modal-thumb-player"
-              onClick={onClose}
-            >
-              {video.thumbnail_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/img-proxy?url=${encodeURIComponent(video.thumbnail_url)}`}
-                  alt={video.caption || "Instagram"}
-                  className="video-modal-thumb-player-img"
-                />
-              ) : (
-                <div className="video-modal-thumb-placeholder" />
-              )}
-              <div className="video-modal-thumb-overlay">
-                <div className="video-modal-thumb-play">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-                <p className="video-modal-thumb-label">{tapLabel}</p>
-              </div>
-            </a>
+            /* Instagram: iframe but clip off the Header (top) and Feedback/Footer (bottom) */
+            <div className="video-embed-clip ig-clip">
+              <iframe
+                src={`https://www.instagram.com/p/${extractInstagramId(video.url)}/embed/`}
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                title={video.caption || "Instagram"}
+                style={{ border: "none" }}
+              />
+            </div>
           )}
         </div>
 
