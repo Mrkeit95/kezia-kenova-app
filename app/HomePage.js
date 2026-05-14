@@ -221,7 +221,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
               <span className="dot"></span>
               <span>{s.location}</span>
             </div>
-            <h1 className="name">Kezia Ken</h1>
+            <h1 className="name">Kezia Kenova</h1>
             <p className="tagline">{s.tagline}</p>
           </header>
 
