@@ -297,7 +297,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                 <p className="section-sub">watch · shop the yellow card</p>
                 <div className="video-cards-wrap"><div className="video-cards">
                   {tiktokVideos.map((v) => (
-                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
+                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)} style={v.thumbnail_url ? { "--thumb-bg": `url(${v.thumbnail_url})` } : {}}>
                       <div className="video-card-thumb">
                         {v.thumbnail_url && <img src={v.thumbnail_url} alt={v.caption || "TikTok"} className="video-card-thumb-img" />}
                         <div className="video-card-platform tiktok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg></div>
@@ -318,7 +318,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                 <p className="section-sub">reels &amp; moments</p>
                 <div className="video-cards-wrap"><div className="video-cards">
                   {instagramVideos.map((v) => (
-                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
+                    <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)} style={v.thumbnail_url ? { "--thumb-bg": `url(${v.thumbnail_url})` } : {}}>
                       <div className="video-card-thumb">
                         {v.thumbnail_url && <img src={v.thumbnail_url} alt={v.caption || "Instagram"} className="video-card-thumb-img" />}
                         <div className="video-card-platform instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg></div>
