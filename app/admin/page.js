@@ -5,12 +5,10 @@ import Link from "next/link";
 export default async function DashboardPage() {
   const supabase = createClient();
 
-  const [productsRes, subsRes, clicksRes, weekClicksRes, recentSubsRes, topProductsRes, looksRes] = await Promise.all([
+  const [productsRes, clicksRes, weekClicksRes, topProductsRes, looksRes] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("subscribers").select("id", { count: "exact", head: true }),
     supabase.from("clicks").select("id", { count: "exact", head: true }),
     supabase.from("clicks").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase.from("subscribers").select("email, created_at").order("created_at", { ascending: false }).limit(5),
     supabase.from("clicks").select("product_id, products(title, brand, image_url)").gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     supabase.from("looks").select("id", { count: "exact", head: true }),
   ]);
@@ -47,18 +45,6 @@ export default async function DashboardPage() {
               <div className="stat-label">Products</div>
               <div className="stat-value">{productsRes.count ?? 0}</div>
               <div className="stat-meta">active items</div>
-            </Link>
-
-            <Link href="/admin/subscribers" className="stat-card stat-card-link">
-              <div className="stat-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M3 7l9 6 9-6" />
-                </svg>
-              </div>
-              <div className="stat-label">Subscribers</div>
-              <div className="stat-value">{subsRes.count ?? 0}</div>
-              <div className="stat-meta">emails collected</div>
             </Link>
 
             <Link href="/admin/analytics" className="stat-card stat-card-link">
@@ -115,26 +101,7 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            <div className="admin-section admin-flex-1">
-              <div className="admin-section-head">
-                <h2 className="admin-section-title">Recent Subscribers</h2>
-                <Link href="/admin/subscribers" className="btn-ghost">View all</Link>
-              </div>
-              {(!recentSubsRes.data || recentSubsRes.data.length === 0) ? (
-                <div className="empty-state">No subscribers yet.</div>
-              ) : (
-                <div className="dashboard-subs-list">
-                  {recentSubsRes.data.map((s, i) => (
-                    <div key={i} className="dashboard-sub-row">
-                      <span className="subscriber-email">{s.email}</span>
-                      <span className="subscriber-date">
-                        {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
           </div>
 
           <div className="admin-section">
