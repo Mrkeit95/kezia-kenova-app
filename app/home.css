@@ -409,17 +409,16 @@
 }
 
 /* Blurred image glow bleeds outside top and bottom — matches reference site */
-.video-card-thumb::before {
-  content: "";
+.video-card-glow {
   position: absolute;
-  inset: -18px -6px;
+  inset: -20px -8px;
   z-index: -1;
-  background-image: var(--thumb-bg);
   background-size: cover;
   background-position: center;
-  filter: blur(18px) saturate(1.6) brightness(0.9);
-  opacity: 0.7;
+  filter: blur(20px) saturate(1.8) brightness(0.85);
+  opacity: 0.75;
   border-radius: 20px;
+  pointer-events: none;
 }
 
 .video-card-thumb-img {
