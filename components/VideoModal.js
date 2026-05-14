@@ -2,6 +2,12 @@
 
 import { useEffect } from "react";
 
+function extractTikTokId(url) {
+  if (!url) return null;
+  const m = url.match(/video\/(\d+)/);
+  return m ? m[1] : null;
+}
+
 export default function VideoModal({ video, onClose }) {
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -16,7 +22,7 @@ export default function VideoModal({ video, onClose }) {
 
   const platformLabel = isTikTok ? "TikTok" : "Instagram";
   const ctaLabel = isTikTok ? "Watch & Shop on TikTok ↗" : "Watch on Instagram ↗";
-  const tapLabel = isTikTok ? "Tap to watch on TikTok" : "Tap to watch on Instagram";
+  const tapLabel = "Tap to open on Instagram";
 
   return (
     <div className="video-modal-overlay" onClick={onClose}>
@@ -44,34 +50,48 @@ export default function VideoModal({ video, onClose }) {
           </button>
         </div>
 
-        {/* Thumbnail player — same for both TikTok and Instagram, no iframes */}
+        {/* Video area */}
         <div className="video-modal-embed">
-          <a
-            href={video.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="video-modal-thumb-player"
-            onClick={onClose}
-          >
-            {video.thumbnail_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={video.thumbnail_url}
-                alt={video.caption || platformLabel}
-                className="video-modal-thumb-player-img"
+          {isTikTok ? (
+            /* TikTok: real iframe embed — plays inside the site */
+            <div className="video-embed-clip">
+              <iframe
+                src={`https://www.tiktok.com/embed/v2/${extractTikTokId(video.url)}`}
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                title={video.caption || "TikTok"}
+                style={{ border: "none", width: "100%", height: "100%" }}
               />
-            ) : (
-              <div className="video-modal-thumb-placeholder" />
-            )}
-            <div className="video-modal-thumb-overlay">
-              <div className="video-modal-thumb-play">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <p className="video-modal-thumb-label">{tapLabel}</p>
             </div>
-          </a>
+          ) : (
+            /* Instagram: thumbnail only — IG embeds always show profile pic/likes */
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="video-modal-thumb-player"
+              onClick={onClose}
+            >
+              {video.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={video.thumbnail_url}
+                  alt={video.caption || "Instagram"}
+                  className="video-modal-thumb-player-img"
+                />
+              ) : (
+                <div className="video-modal-thumb-placeholder" />
+              )}
+              <div className="video-modal-thumb-overlay">
+                <div className="video-modal-thumb-play">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <p className="video-modal-thumb-label">{tapLabel}</p>
+              </div>
+            </a>
+          )}
         </div>
 
         {/* CTA button */}
