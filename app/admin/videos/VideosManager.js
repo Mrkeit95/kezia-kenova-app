@@ -45,7 +45,22 @@ export default function VideosManager({ initialVideos }) {
   const [fetchingAll, setFetchingAll] = useState(false);
   const router = useRouter();
 
-  // Bulk-fetch thumbnails for ALL videos (force re-fetch, not just missing)
+  // Upload a CDN image URL to Supabase storage and return a permanent public URL
+  const uploadThumbToStorage = async (supabase, cdnUrl, videoId) => {
+    try {
+      const res = await fetch(cdnUrl);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const ext = "jpg";
+      const filename = `video-thumb-${videoId}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(filename, blob, { contentType: "image/jpeg", upsert: true });
+      if (error) return null;
+      const { data } = supabase.storage.from("product-images").getPublicUrl(filename);
+      return data.publicUrl;
+    } catch { return null; }
+  };
+
+  // Bulk-fetch thumbnails for ALL videos, then upload to Supabase for permanent URLs
   const fetchAllThumbnails = async () => {
     const toFetch = videos.filter((v) => v.url);
     if (toFetch.length === 0) return alert("No videos to fetch!");
@@ -57,8 +72,11 @@ export default function VideosManager({ initialVideos }) {
         const res = await fetch(`/api/oembed?url=${encodeURIComponent(v.url)}&platform=${v.platform}`);
         const data = await res.json();
         if (data.thumbnail_url) {
-          await supabase.from("videos").update({ thumbnail_url: data.thumbnail_url }).eq("id", v.id);
-          updated = updated.map((u) => u.id === v.id ? { ...u, thumbnail_url: data.thumbnail_url } : u);
+          // Upload to Supabase storage for a permanent URL that never expires
+          const permanentUrl = await uploadThumbToStorage(supabase, data.thumbnail_url, v.id);
+          const finalUrl = permanentUrl || data.thumbnail_url;
+          await supabase.from("videos").update({ thumbnail_url: finalUrl }).eq("id", v.id);
+          updated = updated.map((u) => u.id === v.id ? { ...u, thumbnail_url: finalUrl } : u);
         }
       } catch {}
     }
@@ -177,13 +195,11 @@ export default function VideosManager({ initialVideos }) {
               </div>
               {/* Thumbnail */}
               <div className="video-row-thumb">
-                {(extractInstagramId(v.url) || v.thumbnail_url) ? (
+                {v.thumbnail_url ? (
                   <div className="video-row-thumbnail">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={platform === "instagram" && extractInstagramId(v.url)
-                        ? `/api/img-proxy?shortcode=${extractInstagramId(v.url)}`
-                        : v.thumbnail_url}
+                      src={v.thumbnail_url}
                       alt=""
                       onError={(e) => { e.target.style.display = "none"; }}
                     />
