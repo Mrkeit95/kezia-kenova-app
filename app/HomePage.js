@@ -328,7 +328,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                         </div>
                       </div>
                     </button>
-                  ))
+                  ))}
                 </div></div>
               </section>
             );
