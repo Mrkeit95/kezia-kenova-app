@@ -31,7 +31,7 @@ export default function VideoModal({ video, onClose }) {
   const embedUrl = isTikTok && tikTokId
     ? `https://www.tiktok.com/embed/v2/${tikTokId}`
     : isInstagram && instagramId
-    ? `https://www.instagram.com/reel/${instagramId}/embed/`
+    ? `https://www.instagram.com/p/${instagramId}/embed/captioned/`
     : null;
 
   const shopLabel = isTikTok ? "Watch & Shop on TikTok ↗" : "Open on Instagram ↗";
@@ -62,13 +62,15 @@ export default function VideoModal({ video, onClose }) {
 
         <div className="video-modal-embed">
           {embedUrl ? (
-            <iframe
-              src={embedUrl}
-              allowFullScreen
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-              title={video.caption || "Video"}
-              style={{ border: "none", width: "100%", height: "100%" }}
-            />
+            <div className={`video-embed-clip ${isInstagram ? "instagram-clip" : ""}`}>
+              <iframe
+                src={embedUrl}
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                title={video.caption || "Video"}
+                style={{ border: "none", width: "100%", height: "100%" }}
+              />
+            </div>
           ) : (
             <div className="video-modal-error">
               <p>Could not load video preview.</p>

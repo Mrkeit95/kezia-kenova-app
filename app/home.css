@@ -344,25 +344,25 @@
 
 .video-card {
   flex: 0 0 auto;
-  width: 180px;
+  width: 160px;
   scroll-snap-align: start;
-  background: #ffffff;
-  border: 1px solid rgba(26, 20, 16, 0.07);
+  background: #1a1410;
+  border: none;
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   text-align: left;
   padding: 0;
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 2px 10px rgba(26, 20, 16, 0.06);
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 18px rgba(26, 20, 16, 0.18);
 }
 
 .video-card:hover, .video-card:active {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(26, 20, 16, 0.12);
-  border-color: rgba(26, 20, 16, 0.14);
+  transform: scale(1.03);
 }
 
+/* The entire card IS the thumbnail — full bleed, no body text */
 .video-card-thumb {
   position: relative;
   width: 100%;
@@ -386,60 +386,83 @@
 
 .video-card:hover .video-card-thumb-img { transform: scale(1.04); }
 
+/* Subtle dark gradient at bottom so play button is readable */
+.video-card-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.45) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .video-card-play {
-  width: 48px;
-  height: 48px;
-  background: rgba(255,255,255,0.15);
-  border: 1.5px solid rgba(255,255,255,0.35);
+  position: relative;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.5);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
-.video-card-play svg { width: 20px; height: 20px; margin-left: 3px; }
-.video-card:hover .video-card-play { background: rgba(255,255,255,0.25); transform: scale(1.08); }
+.video-card-play svg { width: 18px; height: 18px; margin-left: 3px; }
+.video-card:hover .video-card-play { background: rgba(255,255,255,0.3); transform: scale(1.1); }
 
 .video-card-platform {
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   right: 10px;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 2;
 }
 
-.video-card-platform svg { width: 16px; height: 16px; }
+.video-card-platform svg { width: 14px; height: 14px; }
 
 .video-card-platform.tiktok {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   border: 1px solid rgba(105,201,208,0.5);
   color: #69c9d0;
 }
 
 .video-card-platform.instagram {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   border: 1px solid rgba(193,53,132,0.5);
   color: #e1306c;
 }
 
+/* Caption overlaid at bottom of thumb */
 .video-card-body {
-  padding: 12px 14px 14px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px 12px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .video-card-caption {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  color: #1a1410;
-  line-height: 1.4;
-  margin-bottom: 4px;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.3;
+  margin-bottom: 2px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -448,8 +471,8 @@
 }
 
 .video-card-cta {
-  font-size: 11px;
-  color: #b07d4a;
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -535,6 +558,32 @@
   justify-content: center;
 }
 
+/* Clip wrapper — fills the embed container and hides IG/TT chrome */
+.video-embed-clip {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-embed-clip iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/*
+  Instagram embed includes a bottom bar with likes/comments/share.
+  We expand the iframe taller than the container and shift it up
+  so only the video fills the visible area.
+  The container has overflow:hidden so the bottom bar is clipped out.
+*/
+.video-embed-clip.instagram-clip iframe {
+  height: calc(100% + 80px);
+  margin-bottom: -80px;
+}
+
 .video-modal-error {
   text-align: center;
   color: rgba(250,249,247,0.4);
@@ -580,7 +629,7 @@
 @media (max-width: 480px) {
   .video-cards-wrap { width: calc(100% + 44px); margin-left: -22px; margin-right: -22px; }
   .video-cards { padding: 6px 22px 16px; }
-  .video-card { width: 155px; }
+  .video-card { width: 140px; }
   .video-modal { max-width: 100%; }
   .video-modal-embed { max-height: 58vh; }
 }
