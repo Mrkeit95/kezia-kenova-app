@@ -2,11 +2,6 @@
 
 import { useEffect } from "react";
 
-function extractTikTokId(url) {
-  const m = url.match(/video\/(\d+)/);
-  return m ? m[1] : null;
-}
-
 function extractInstagramId(url) {
   if (!url) return null;
   const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
@@ -25,20 +20,21 @@ export default function VideoModal({ video, onClose }) {
 
   const isTikTok = video.platform === "tiktok";
   const isInstagram = video.platform === "instagram";
-  const tikTokId = isTikTok ? extractTikTokId(video.url) : null;
   const instagramId = isInstagram ? extractInstagramId(video.url) : null;
 
-  const embedUrl = isTikTok && tikTokId
-    ? `https://www.tiktok.com/embed/v2/${tikTokId}`
-    : isInstagram && instagramId
-    ? `https://www.instagram.com/p/${instagramId}/embed/captioned/`
+  // TikTok: never use iframe (always shows likes/comments/UI) — show thumbnail player instead
+  // Instagram: use embed iframe with aggressive clipping
+  const instagramEmbedUrl = isInstagram && instagramId
+    ? `https://www.instagram.com/p/${instagramId}/embed/`
     : null;
 
-  const shopLabel = isTikTok ? "Watch & Shop on TikTok ↗" : "Open on Instagram ↗";
+  const shopLabel = isTikTok ? "Watch on TikTok ↗" : "Open on Instagram ↗";
 
   return (
     <div className="video-modal-overlay" onClick={onClose}>
       <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
         <div className="video-modal-header">
           <div className="video-modal-platform">
             {isTikTok ? (
@@ -60,34 +56,65 @@ export default function VideoModal({ video, onClose }) {
           </button>
         </div>
 
+        {/* Video area */}
         <div className="video-modal-embed">
-          {embedUrl ? (
-            <div className={`video-embed-clip ${isInstagram ? "instagram-clip" : ""}`}>
+          {isTikTok ? (
+            /* TikTok: clean thumbnail player — clicking opens TikTok directly */
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="video-modal-thumb-player"
+              onClick={onClose}
+            >
+              {video.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={video.thumbnail_url} alt={video.caption || "TikTok"} className="video-modal-thumb-player-img" />
+              ) : (
+                <div className="video-modal-thumb-placeholder" />
+              )}
+              <div className="video-modal-thumb-overlay">
+                <div className="video-modal-thumb-play">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <p className="video-modal-thumb-label">Tap to watch on TikTok</p>
+              </div>
+            </a>
+          ) : instagramEmbedUrl ? (
+            /* Instagram: iframe with aggressive clip to hide likes/comments bar */
+            <div className="video-embed-clip instagram-clip">
               <iframe
-                src={embedUrl}
+                src={instagramEmbedUrl}
                 allowFullScreen
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                title={video.caption || "Video"}
+                title={video.caption || "Instagram Reel"}
                 style={{ border: "none", width: "100%", height: "100%" }}
               />
             </div>
           ) : (
             <div className="video-modal-error">
-              <p>Could not load video preview.</p>
+              <p>Could not load video.</p>
               <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The URL may be invalid.</p>
             </div>
           )}
         </div>
 
+        {/* CTA button */}
         <a
           href={video.url}
           target="_blank"
           rel="noopener noreferrer"
           className="video-modal-cta"
         >
-          {isTikTok && (
+          {isTikTok ? (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
               <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
             </svg>
           )}
           {shopLabel}
@@ -95,7 +122,7 @@ export default function VideoModal({ video, onClose }) {
 
         {isTikTok && (
           <p className="video-modal-hint">
-            Tap the yellow shopping cart in the video to purchase through TikTok's affiliate program
+            Shop the yellow cart in the TikTok video to purchase through TikTok Shop
           </p>
         )}
       </div>

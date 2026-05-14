@@ -574,14 +574,88 @@
 }
 
 /*
-  Instagram embed includes a bottom bar with likes/comments/share.
-  We expand the iframe taller than the container and shift it up
-  so only the video fills the visible area.
-  The container has overflow:hidden so the bottom bar is clipped out.
+  Instagram embed: expand iframe height and clip the bottom bar
+  (likes, comments, share buttons) out of view.
 */
+.video-embed-clip.instagram-clip {
+  position: relative;
+}
 .video-embed-clip.instagram-clip iframe {
-  height: calc(100% + 80px);
-  margin-bottom: -80px;
+  height: calc(100% + 120px);
+  margin-bottom: -120px;
+}
+
+/* TikTok: clean thumbnail player (no iframe — no social chrome) */
+.video-modal-thumb-player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  text-decoration: none;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.video-modal-thumb-player-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.video-modal-thumb-player:hover .video-modal-thumb-player-img {
+  transform: scale(1.03);
+}
+
+.video-modal-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #1a1410, #2d1f14);
+}
+
+.video-modal-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(0,0,0,0.28);
+  transition: background 0.3s ease;
+}
+
+.video-modal-thumb-player:hover .video-modal-thumb-overlay {
+  background: rgba(0,0,0,0.18);
+}
+
+.video-modal-thumb-play {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.video-modal-thumb-player:hover .video-modal-thumb-play {
+  background: rgba(255,255,255,0.35);
+  transform: scale(1.08);
+}
+
+.video-modal-thumb-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.08em;
+  text-align: center;
+  font-family: inherit;
 }
 
 .video-modal-error {

@@ -376,7 +376,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
             <div className="rule"></div>
 
             {/* Social icons in footer */}
-            {(s.instagram_url || s.tiktok_url || s.whatsapp_url) && (
+            {(s.instagram_url || s.tiktok_url || s.whatsapp_url || s.email) && (
               <div className="footer-social">
                 {s.instagram_url && (
                   <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="footer-social-link" aria-label="Instagram">
@@ -400,6 +400,14 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
                     </svg>
                     <span>WhatsApp</span>
+                  </a>
+                )}
+                {s.email && (
+                  <a href={`mailto:${s.email}`} className="footer-social-link" aria-label="Email">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
+                    </svg>
+                    <span>Email</span>
                   </a>
                 )}
               </div>
