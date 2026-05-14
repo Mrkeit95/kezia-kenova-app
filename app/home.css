@@ -332,10 +332,10 @@
 
 .video-cards {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 6px 32px 18px;
+  padding: 16px 32px 24px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -344,22 +344,24 @@
 
 .video-card {
   flex: 0 0 auto;
-  width: 160px;
+  width: 155px;
   scroll-snap-align: start;
-  background: #1a1410;
+  background: #111;
   border: none;
-  border-radius: 12px;
-  overflow: hidden;
+  border-radius: 16px;
+  overflow: visible;
   cursor: pointer;
   text-align: left;
   padding: 0;
   position: relative;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 8px 32px rgba(26, 20, 16, 0.35), 0 2px 8px rgba(26, 20, 16, 0.2);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Soft blurred glow shadow like the reference site */
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.32)) drop-shadow(0 2px 6px rgba(0,0,0,0.18));
 }
 
 .video-card:hover, .video-card:active {
-  transform: scale(1.03);
+  transform: translateY(-4px) scale(1.02);
+  filter: drop-shadow(0 16px 32px rgba(0,0,0,0.4)) drop-shadow(0 4px 10px rgba(0,0,0,0.22));
 }
 
 /* The entire card IS the thumbnail — full bleed, no body text */
@@ -372,6 +374,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  border-radius: 16px;
 }
 
 .video-card-thumb-img {

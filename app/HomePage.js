@@ -320,7 +320,7 @@ export default function HomePage({ products, settings, looks, sections, videos, 
                   {instagramVideos.map((v) => (
                     <button key={v.id} className="video-card" onClick={() => setActiveVideo(v)}>
                       <div className="video-card-thumb">
-                        {v.thumbnail_url && <img src={v.thumbnail_url} alt={v.caption || "Instagram"} className="video-card-thumb-img" />}
+                        {v.thumbnail_url && <img src={`/api/img-proxy?url=${encodeURIComponent(v.thumbnail_url)}`} alt={v.caption || "Instagram"} className="video-card-thumb-img" />}
                         <div className="video-card-platform instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg></div>
                         <div className="video-card-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
                         <div className="video-card-body">

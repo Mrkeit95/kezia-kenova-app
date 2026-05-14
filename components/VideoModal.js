@@ -75,7 +75,7 @@ export default function VideoModal({ video, onClose }) {
               {video.thumbnail_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={video.thumbnail_url}
+                  src={`/api/img-proxy?url=${encodeURIComponent(video.thumbnail_url)}`}
                   alt={video.caption || "Instagram"}
                   className="video-modal-thumb-player-img"
                 />
