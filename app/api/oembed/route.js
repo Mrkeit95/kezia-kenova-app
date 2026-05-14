@@ -9,7 +9,6 @@ export async function GET(request) {
     let thumbUrl = null;
 
     if (platform === "tiktok") {
-      // TikTok oEmbed — returns thumbnail_url reliably
       const res = await fetch(
         `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
         { headers: { "User-Agent": "Mozilla/5.0 (compatible; NextBot/1.0)" }, next: { revalidate: 86400 } }
@@ -18,55 +17,59 @@ export async function GET(request) {
         const data = await res.json();
         thumbUrl = data.thumbnail_url || null;
       }
+
     } else if (platform === "instagram") {
-      // Scrape Instagram's public embed page — no auth needed for public posts
       const clean = url.split(/[?#]/)[0].replace(/\/+$/, "");
       const m = clean.match(/\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
       if (m) {
         const shortcode = m[2];
-
-        // Try multiple embed URL formats
-        const embedUrls = [
+        const embedRes = await fetch(
           `https://www.instagram.com/p/${shortcode}/embed/`,
-          `https://www.instagram.com/reel/${shortcode}/embed/`,
-        ];
-
-        for (const embedUrl of embedUrls) {
-          if (thumbUrl) break;
-          const embedRes = await fetch(embedUrl, {
+          {
             headers: {
               "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
               "Accept-Language": "en-US,en;q=0.5",
             },
             cache: "no-store",
-          });
+          }
+        );
 
-          if (!embedRes.ok) continue;
+        if (embedRes.ok) {
           const html = await embedRes.text();
 
-          // 1. Any scontent CDN image that is NOT the profile picture (t51.82787)
-          const cdnMatch =
-            html.match(/src="(https:\/\/scontent[^"]+t51\.71878[^"]+\.jpg[^"]*)"/)
-            || html.match(/src="(https:\/\/scontent[^"]+t51\.2885-15[^"]+\.jpg[^"]*)"/)
-            || html.match(/src="(https:\/\/scontent[^"]+(?:(?!t51\.82787)[^"]+)\.jpg[^"]*)"/);
-          if (cdnMatch) { thumbUrl = cdnMatch[1].replace(/&amp;/g, "&"); break; }
-
-          // 2. display_url inside JSON blob
-          const displayMatch = html.match(/["']display_url["']:\s*["']([^"']+)["']/);
-          if (displayMatch) {
-            try { thumbUrl = JSON.parse('"' + displayMatch[1] + '"'); break; } catch {}
+          // t51.71878 = Instagram video cover frame — lives in srcset, NOT src
+          // Split srcset on commas, take last (highest res) entry
+          const srcset1 = html.match(/srcset="([^"]*t51\.71878[^"]*)"/i);
+          if (srcset1) {
+            const entries = srcset1[1].split(",").map(function(s) { return s.trim(); }).filter(Boolean);
+            const last = entries[entries.length - 1].split(/\s+/)[0];
+            if (last) thumbUrl = last.replace(/&amp;/g, "&");
           }
 
-          // 3. image_versions inside JSON blob
-          const ivMatch = html.match(/["']url["']:\s*["'](https:\/\/scontent[^"']+\.jpg[^"']*)["']/);
-          if (ivMatch) { thumbUrl = ivMatch[1].replace(/&amp;/g, "&"); break; }
+          // t51.71878 in plain src= (sometimes present)
+          if (!thumbUrl) {
+            const src1 = html.match(/src="(https:\/\/scontent[^"]+t51\.71878[^"]+\.jpg[^"]*)"/);
+            if (src1) thumbUrl = src1[1].replace(/&amp;/g, "&");
+          }
 
-          // 4. og:image meta tag
-          const ogMatch =
-            html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-            html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-          if (ogMatch) { thumbUrl = ogMatch[1].replace(/&amp;/g, "&"); break; }
+          // t51.2885-15 in srcset (standard post image)
+          if (!thumbUrl) {
+            const srcset2 = html.match(/srcset="([^"]*t51\.2885-15[^"]*)"/i);
+            if (srcset2) {
+              const entries = srcset2[1].split(",").map(function(s) { return s.trim(); }).filter(Boolean);
+              const last = entries[entries.length - 1].split(/\s+/)[0];
+              if (last) thumbUrl = last.replace(/&amp;/g, "&");
+            }
+          }
+
+          // og:image meta tag — final fallback
+          if (!thumbUrl) {
+            const og =
+              html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+              html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+            if (og) thumbUrl = og[1].replace(/&amp;/g, "&");
+          }
         }
       }
     }
