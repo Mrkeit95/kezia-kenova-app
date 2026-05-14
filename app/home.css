@@ -409,17 +409,19 @@
   z-index: 1;
 }
 
-/* Blurred image glow — sits behind card, bleeds outside it */
+/* Blurred image glow — sits behind card, follows rounded card shape */
 .video-card-glow {
   position: absolute;
-  inset: -22px -10px;
+  inset: -18px -10px;
   z-index: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(22px) saturate(1.8) brightness(0.85);
-  opacity: 0.7;
-  border-radius: 24px;
+  filter: blur(18px) saturate(1.8) brightness(0.85);
+  opacity: 0.65;
+  border-radius: 28px;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 85% 90% at 50% 50%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 85% 90% at 50% 50%, black 40%, transparent 100%);
 }
 
 .video-card-thumb-img {
