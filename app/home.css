@@ -406,18 +406,19 @@
   justify-content: center;
   overflow: hidden;
   border-radius: 12px;
+  z-index: 1;
 }
 
-/* Blurred image glow bleeds outside top and bottom — matches reference site */
+/* Blurred image glow — sits behind card, bleeds outside it */
 .video-card-glow {
   position: absolute;
-  inset: -20px -8px;
-  z-index: -1;
+  inset: -22px -10px;
+  z-index: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(20px) saturate(1.8) brightness(0.85);
-  opacity: 0.75;
-  border-radius: 20px;
+  filter: blur(22px) saturate(1.8) brightness(0.85);
+  opacity: 0.7;
+  border-radius: 24px;
   pointer-events: none;
 }
 
