@@ -177,10 +177,12 @@ export default function VideosManager({ initialVideos }) {
               </div>
               {/* Thumbnail */}
               <div className="video-row-thumb">
-                {v.thumbnail_url ? (
+                {(v.thumbnail_url || (platform === "instagram" && extractInstagramId(v.url))) ? (
                   <div className="video-row-thumbnail">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={v.thumbnail_url} alt="" />
+                    <img src={platform === "instagram" && extractInstagramId(v.url)
+                      ? `/api/img-proxy?shortcode=${extractInstagramId(v.url)}`
+                      : v.thumbnail_url} alt="" />
                     <div className={`video-row-platform-dot ${platform}`}>
                       {platform === "tiktok"
                         ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
