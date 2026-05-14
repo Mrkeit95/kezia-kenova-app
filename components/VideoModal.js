@@ -71,14 +71,15 @@ export default function VideoModal({ video, onClose }) {
               />
             </div>
           ) : (
-            /* Instagram: iframe but clip off the Header (top) and Feedback/Footer (bottom) */
+            /* Instagram: iframe, shift up to hide header, overflow hides footer/likes */
             <div className="video-embed-clip ig-clip">
               <iframe
                 src={`https://www.instagram.com/p/${extractInstagramId(video.url)}/embed/`}
                 allowFullScreen
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
                 title={video.caption || "Instagram"}
-                style={{ border: "none" }}
+                scrolling="no"
+                style={{ border: "none", width: "100%", height: "calc(100% + 260px)", marginTop: "-68px", display: "block" }}
               />
             </div>
           )}

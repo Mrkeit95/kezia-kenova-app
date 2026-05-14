@@ -577,23 +577,10 @@
   display: block;
 }
 
-/*
-  Instagram embed clip:
-  The IG embed has a ~68px Header (profile pic/username) at the top
-  and ~180px of Feedback+Footer (likes/comments/share) at the bottom.
-  We make the iframe much taller, shift it up with a negative margin-top
-  to hide the header, and clip the bottom with overflow:hidden.
-*/
+/* Instagram embed: overflow:hidden clips the header/footer the iframe shift exposes */
 .video-embed-clip.ig-clip {
   overflow: hidden;
-}
-.video-embed-clip.ig-clip iframe {
-  width: 100%;
-  height: calc(100% + 260px);
-  margin-top: -68px;
-  margin-bottom: -192px;
-  display: block;
-  border: none;
+  position: relative;
 }
 
 /* TikTok: clean thumbnail player (no iframe — no social chrome) */

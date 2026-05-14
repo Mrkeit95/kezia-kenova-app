@@ -45,14 +45,14 @@ export default function VideosManager({ initialVideos }) {
   const [fetchingAll, setFetchingAll] = useState(false);
   const router = useRouter();
 
-  // Bulk-fetch thumbnails for all videos that are missing one
+  // Bulk-fetch thumbnails for ALL videos (force re-fetch, not just missing)
   const fetchAllThumbnails = async () => {
-    const missing = videos.filter((v) => !v.thumbnail_url && v.url);
-    if (missing.length === 0) return alert("All videos already have thumbnails!");
+    const toFetch = videos.filter((v) => v.url);
+    if (toFetch.length === 0) return alert("No videos to fetch!");
     setFetchingAll(true);
     const supabase = createClient();
     let updated = [...videos];
-    for (const v of missing) {
+    for (const v of toFetch) {
       try {
         const res = await fetch(`/api/oembed?url=${encodeURIComponent(v.url)}&platform=${v.platform}`);
         const data = await res.json();
@@ -177,12 +177,16 @@ export default function VideosManager({ initialVideos }) {
               </div>
               {/* Thumbnail */}
               <div className="video-row-thumb">
-                {(v.thumbnail_url || (platform === "instagram" && extractInstagramId(v.url))) ? (
+                {(extractInstagramId(v.url) || v.thumbnail_url) ? (
                   <div className="video-row-thumbnail">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={platform === "instagram" && extractInstagramId(v.url)
-                      ? `/api/img-proxy?shortcode=${extractInstagramId(v.url)}`
-                      : v.thumbnail_url} alt="" />
+                    <img
+                      src={platform === "instagram" && extractInstagramId(v.url)
+                        ? `/api/img-proxy?shortcode=${extractInstagramId(v.url)}`
+                        : v.thumbnail_url}
+                      alt=""
+                      onError={(e) => { e.target.style.display = "none"; }}
+                    />
                     <div className={`video-row-platform-dot ${platform}`}>
                       {platform === "tiktok"
                         ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
@@ -218,20 +222,16 @@ export default function VideosManager({ initialVideos }) {
     </div>
   );
 
-  const missingThumbs = videos.filter((v) => !v.thumbnail_url).length;
-
   return (
     <>
-      {missingThumbs > 0 && (
-        <div style={{ background: "rgba(212,165,116,0.08)", border: "1px solid rgba(212,165,116,0.2)", borderRadius: 8, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <span style={{ fontSize: 12, color: "rgba(232,223,210,0.7)", letterSpacing: "0.06em" }}>
-            {missingThumbs} video{missingThumbs > 1 ? "s are" : " is"} missing a thumbnail
-          </span>
-          <button onClick={fetchAllThumbnails} className="btn-primary" disabled={fetchingAll} style={{ flexShrink: 0 }}>
-            {fetchingAll ? "Fetching…" : "Auto-Fetch All Thumbnails"}
-          </button>
-        </div>
-      )}
+      <div style={{ background: "rgba(212,165,116,0.08)", border: "1px solid rgba(212,165,116,0.2)", borderRadius: 8, padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ fontSize: 12, color: "rgba(232,223,210,0.7)", letterSpacing: "0.06em" }}>
+          Re-fetch all thumbnails from TikTok &amp; Instagram
+        </span>
+        <button onClick={fetchAllThumbnails} className="btn-primary" disabled={fetchingAll} style={{ flexShrink: 0 }}>
+          {fetchingAll ? "Fetching…" : "Refresh All Thumbnails"}
+        </button>
+      </div>
       {renderGroup(tiktoks, "tiktok", "TikTok Videos")}
       {renderGroup(instagrams, "instagram", "Instagram Videos")}
       {editing && <VideoForm video={editing} onSave={handleSave} onCancel={() => setEditing(null)} />}
